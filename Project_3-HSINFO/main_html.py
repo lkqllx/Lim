@@ -15,7 +15,10 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import textwrap
 import hashlib
+import sys
+import time
 from selenium.webdriver.chrome.options import Options
+sys.stdout.flush()
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 
@@ -156,13 +159,13 @@ def send_email(diffs):
             title = 'An Update of Hang Seng Index Constituents'
             send_email_by_smtp(title, body=html)
     else:
-        print(f'There is no update on {dt.datetime.now().hour}:{dt.datetime.now().minute}, '
+        print(f'There is no update on {dt.datetime.now().hour}:{dt.datetime.now().minute}:{dt.datetime.now().second}, '
               f'{dt.datetime.now().year}-{dt.datetime.now().month}-{dt.datetime.now().day}')
 
 
 def run_once():
     web = 'https://www.hsi.com.hk/eng/newsroom/index-other-notices'
-    driver = webdriver.Chrome('/Users/andrew/Desktop/System/chromedriver', options=chrome_options)
+    driver = webdriver.Chrome('./chromedriver', options=chrome_options)
     driver.get(web)
     soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
     elements = soup.find_all('div', class_='newsItem clearFix')
@@ -183,12 +186,9 @@ def run_once():
 def run():
     print('Running......')
     """Check for every default time"""
-    prev_check_time = dt.datetime.now()
     while True:
-        curr_time = dt.datetime.now()
-        if curr_time - prev_check_time > dt.timedelta(minutes=10):
-            run_once()
-            prev_check_time = curr_time
+        run_once()
+        time.sleep(60 * 10)  # 60 secs (1 minute) * 10 -> 10 mins
 
 
 if __name__ == '__main__':
