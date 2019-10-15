@@ -157,6 +157,9 @@ def send_email(diffs):
             </html>
             """
             title = 'An Update of Hang Seng Index Constituents'
+            print(f'There is an update and email was sent at '
+                  f'{dt.datetime.now().hour}:{dt.datetime.now().minute}:{dt.datetime.now().second}, '
+                  f'{dt.datetime.now().year}-{dt.datetime.now().month}-{dt.datetime.now().day}')
             send_email_by_smtp(title, body=html)
     else:
         print(f'There is no update on {dt.datetime.now().hour}:{dt.datetime.now().minute}:{dt.datetime.now().second}, '
