@@ -204,17 +204,26 @@ def reformat_date(df: pd.DataFrame):
 
 
 def run_by_date(ticker):
-        print('-' * 20, f'Doing {ticker}', '-' * 20)
-        if not os.path.exists(f'data/historical/{date}/{ticker}.csv'):
-            stock = Stock(ticker)
-            stock.run()
-            df = pd.DataFrame(stock.info_list, columns=['Time', 'Title', 'Author', 'Number of reads', 'Comments', 'Link'])
-            df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)  # Can be removed
-            formated_df = reformat_date(df)
-            formated_df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)
+    """
+    Scrape the stock info given its ticker
+    :param ticker: the stock to be scraped
+    :return: None
+    """
+    print('-' * 20, f'Doing {ticker}', '-' * 20)
+    if not os.path.exists(f'data/historical/{date}/{ticker}.csv'):
+        stock = Stock(ticker)
+        stock.run()
+        df = pd.DataFrame(stock.info_list, columns=['Time', 'Title', 'Author', 'Number of reads', 'Comments', 'Link'])
+        df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)  # Can be removed
+        formated_df = reformat_date(df)
+        formated_df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)
 
 
 def run_by_multiprocesses():
+    """
+    Multiprocess function to speed up the program
+    :return: None
+    """
     os.chdir('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum')
     global date
     date = dt.datetime.strftime(dt.datetime.now(), "%Y-%m-%d")
