@@ -168,9 +168,10 @@ def send_email(diffs):
 
 def run_once():
     web = 'https://www.hsi.com.hk/eng/newsroom/index-other-notices'
-    driver = webdriver.Chrome('./chromedriver', options=chrome_options)
-    driver.get(web)
-    soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
+    with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
+        driver.set_page_load_timeout(120)
+        driver.get(web)
+        soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
     elements = soup.find_all('div', class_='newsItem clearFix')
     prefix_html = 'https://www.hsi.com.hk'
     outs = []
@@ -190,7 +191,10 @@ def run():
     print('Running......')
     """Check for every default time"""
     while True:
-        run_once()
+        try:
+            run_once()
+        except Exception as e:
+            print(f'Unexpected error - {e}')
         time.sleep(60 * 10)  # 60 secs (1 minute) * 10 -> 10 mins
 
 
