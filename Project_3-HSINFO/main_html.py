@@ -23,10 +23,10 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")
 
 
-EMAIL_RECEIVERS = 'llice@connect.ust.hk'
+EMAIL_RECEIVERS = 'simon.chan@limadvisors.com'
 ALTERNATE_EMAIL_RECEIVER = 'andrew.li@limadvisors.com'
-EMAIL_SENDER = 'llice@connect.ust.hk'
-EMAIL_SENDER_PASSWORD = r'LlX13985112851'
+EMAIL_SENDER = 'andrew730.li@outlook.com'
+EMAIL_SENDER_PASSWORD = 'LlX13985112851'
 
 
 class Crawler:
@@ -57,7 +57,7 @@ def send_email_by_smtp(subject="", body=""):
     try:
         server = smtplib.SMTP(smtp_server, port)
         server.ehlo() # Can be omitted
-        server.starttls(context=context) # Secure the connection
+        server.starttls(context=context)  # Secure the connection
         server.ehlo() # Can be omitted
         server.login(sender_email, password)
         sender_email = EMAIL_SENDER
