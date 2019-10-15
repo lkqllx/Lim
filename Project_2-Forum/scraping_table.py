@@ -226,7 +226,7 @@ def run_by_multiprocesses():
     shenzhen_list = pd.read_csv('data/target_list/SZ.csv')
     shenzhen_list = shenzhen_list.iloc[:, 0].apply(lambda x: str(x).zfill(6))
     shenzhen_list = shenzhen_list.values.tolist()
-    pool = mp.Pool(1)
+    pool = mp.Pool(1)  # We may use multiple processes to speed up the program but progress bar will not appear properly
     pool.map(run_by_date, shanghai_list + shenzhen_list)
 
 
