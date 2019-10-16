@@ -22,7 +22,8 @@ def prices(targets: list, start='2010-01-01', end='2019-10-15'):
             try:
                 if not os.path.exists(f'data/prices/{target}.csv'):
                     df = web.get_data_yahoo(target, start, end)
-                    df.to_csv(f'data/prices/{target}.csv')
+                    ticker = target.split('.')[0]
+                    df.to_csv(f'data/prices/{ticker}.csv')
                     lock.acquire()
                     bar.next()
                     lock.release()
