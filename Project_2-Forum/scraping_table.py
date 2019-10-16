@@ -73,12 +73,15 @@ class Stock:
         target_list = soup.find_all(class_='articleh normal_post')
         for target in target_list:
             try:
-                link = target.find('span', class_='l3 a3').find('a').get('href')
+                links = target.find('span', class_='l3 a3').find_all('a')
+                for link in links:
+                    if re.match('/news,[\w\d]+,[\w\d]+.html', link.get('href')):
+                        break
                 text = target.text.strip('\n')
                 readings, comments, title, author, published_time = text.split('\n')
-                self.info_list.append((published_time, title, author, readings, comments, web_base+link))
-            except:
-                pass
+                self.info_list.append((published_time, title, author, readings, comments, web_base+link.get('href')))
+            except Exception as e:
+                print(f'Parsing - {e}')
 
     def run(self):
         """
@@ -87,7 +90,7 @@ class Stock:
         """
         global all_websites  # Declaim a global variable for downloading all the websites
         all_websites = {}
-        first_page = f'http://guba.eastmoney.com/list,{self._ticker},f_1.html'  # Use selenium to get the total pages
+        first_page = f'http://guba.eastmoney.com/list,{self._ticker}_1.html'  # Use selenium to get the total pages
         try:
             with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
                 driver.set_page_load_timeout(30)
@@ -105,7 +108,7 @@ class Stock:
         global bar
         bar = Bar(f'Scraping {self._ticker}', max=self.total_pages)
         sites = [f'http:/' \
-                 f'/guba.eastmoney.com/list,{self._ticker},f_{count}.html' for count in range(self.total_pages)]
+                 f'/guba.eastmoney.com/list,{self._ticker}_{count}.html' for count in range(self.total_pages)]
         download_all_sites(sites)
         bar.finish()
         all_sites = sorted(all_websites.items(), key=lambda x: int(x[0]))
@@ -273,7 +276,7 @@ def run_by_multiprocesses():
     # shenzhen_list = shenzhen_list.iloc[:, 0].apply(lambda x: str(x).zfill(6))
     # shenzhen_list = shenzhen_list.values.tolist()
 
-    csi300 = pd.read_excel('data/target_list/csi300.xls', index_col=0).values[:, 3].tolist()
+    csi300 = pd.read_excel('data/target_list/csi300_sz.xls', index_col=0).values[:, 3].tolist()
     csi300_list = []
     for ticker in csi300:
         if ticker >= 600000:
