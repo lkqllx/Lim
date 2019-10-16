@@ -94,7 +94,7 @@ class Stock:
                 driver.get(first_page)
                 soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
         except Exception as e:
-            print(f'Error - {self._ticker} - {e} - Stock.run')
+            print(f'Error - {self._ticker} - {str(e)} - Stock.run')
             return False
         elements = soup.find_all('span', class_='sumpage')
         self.total_pages = int(elements[0].text)
@@ -198,10 +198,8 @@ def reformat_date(df: pd.DataFrame):
         """To handle the marginal case that two links are the same"""
         sorted_all_websites = [all_websites[link] for link in links]
     except Exception as e:
-        print(f'Error - {e} - links_reformatting')
-        print(links)
-        print(all_websites)
-        raise
+        print(f'Error - {str(e)} - links_reformatting')
+        return
 
     for page in sorted_all_websites:
         try:
@@ -210,10 +208,8 @@ def reformat_date(df: pd.DataFrame):
             year = re.findall('([\d]+)-[\d]+-[\d]+', text)[0]
             target_years.append(year)
         except Exception as e:
-            print(f'Error - {e} - reformat_date - find_year_loop')
-            print(sorted_all_websites)
-            print(text)
-            raise e
+            print(f'Error - {str(e)} - reformat_date - find_year_loop')
+            return
     """
     Reformat the original DataFrame
     """
@@ -229,8 +225,8 @@ def reformat_date(df: pd.DataFrame):
                 df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'] =  \
                     df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
         except Exception as e:
-            print(f'Error - {e} - reformat_date - reformat_loop')
-            raise e
+            print(f'Error - {str(e)} - reformat_date - reformat_loop')
+            return
     return df
 
 
@@ -252,13 +248,13 @@ def run_by_date(ticker):
                 complete = stock.run()
                 if complete:
                     df = pd.DataFrame(stock.info_list, columns=['Time', 'Title', 'Author', 'Number of reads', 'Comments', 'Link'])
-                    df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)  # Can be removed
+                    # df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)  # Can be removed
                     print(f'Finish Downloading {ticker}')
                     formated_df = reformat_date(df)
                     print(f'Finish Formatting {ticker}')
                     formated_df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)
     except Exception as e:
-        print(f'Error - {ticker} - {e} - run_by_date')
+        print(f'Error - {ticker} - {str(e)} - run_by_date')
 
 
 def run_by_multiprocesses():

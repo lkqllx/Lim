@@ -42,6 +42,8 @@ from progress.bar import Bar
 import re
 import os
 import numpy as np
+from snownlp import SnowNLP
+from copy import deepcopy
 
 class SelfSignal:
     """
@@ -120,11 +122,6 @@ class CrossSignal:
                 self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
         self.stocks_post_matrix = self.stocks_post_matrix.fillna(1)
 
-    @staticmethod
-    def add_tradability(df):
-        df['tradability'] = df.count(axis=1)
-        return df
-
     @property
     def trivial_change_matrix(self):
         return self.stocks_post_matrix / self.stocks_post_matrix.shift(1)
@@ -148,20 +145,78 @@ class Backtest:
     """
     Backtest the trading signal for a single stock
     """
-    def __init__(self, signal):
+    def __init__(self, signal: pd.DataFrame, start='2010-01-01', end='2019-10-15', number_of_skipping_days=20):
         self._sginal = signal
+        self._tickers = signal.columns.values.tolist()
+        self._start = dt.datetime.strptime(start, '%Y-%m-%d')
+        self._end = dt.datetime.strptime(end, '%Y-%m-%d')
+        self.date_list = [self._end - dt.timedelta(idx) for idx in range((self._end - self._start).days)]
+        self.number_of_skipping_days = 20  # To skip the IPO period
+        self.preprocess()
 
+    @staticmethod
+    def number_of_available_data_in_row(df):
+        df['available_data_in_row'] = df.count(axis=1)
+        return df
+
+    def preprocess(self):
+        """Build a close prices matrix"""
+        self.prices_matrix = pd.DataFrame(index=self.date_list)
+        for ticker in self._tickers:
+            curr_df = pd.read_csv(f'data/prices/{ticker}.csv', index_col=0, parse_dates=True).Close
+            curr_df.name = ticker
+            self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
+
+
+    def tradability_matrix(self):
+        """
+        This function will do three things
+            1.  Skip IPO periods
+            2.  Skip the day if the stock increase/decrease by 10%
+            3.  Skip holiday, halted dates
+        :return:
+        """
+        prices_matrix = deepcopy(self.prices_matrix)
+        valid_index = [prices_matrix[col].first_valid_index() for col in prices_matrix.columns]
+        for valid_idx, col in zip(valid_index, prices_matrix.columns):
+            prices_matrix.loc[valid_index:valid_index + self.number_of_skipping_days, col] = \
+                np.repeat(np.nan, self.number_of_skipping_days)
+
+
+
+
+
+        self.tradability_matrix = pd.DataFrame(np.where(np.isnan(self.prices_matrix), 0, 1),
+                                               index=self.prices_matrix.index,
+                                               columns=self.prices_matrix.columns)
+
+
+def sentiment(texts: str):
+    text = SnowNLP(texts)
+    sents = text.sentences
+    for sen in sents:
+        s = SnowNLP(sen)
+        print(sen, '-', s.sentiments)
 
 
 def run_backtest():
-    cs = CrossSignal()
+    start = '2010-01-01'
+    end = '2019-10-15'
+    cs = CrossSignal(start=start, end=end)
     print(cs.stocks_post_matrix)
     print(cs.trivial_change_matrix)
     print(cs.ranking_trivial_matrix)
-    print(cs.add_tradability(cs.log_change_matrix))
-    print(cs.add_tradability((cs.log_ranking_matrix)))
+    print(cs.log_change_matrix)
+    print(cs.log_ranking_matrix)
+
+    bs = Backtest(cs.log_change_matrix, start=start, end=end)
+
     print()
 
 
 if __name__ == '__main__':
-    run_backtest()
+    # run_backtest()
+
+    text = '快买这个股票，这个股票一定能够大涨，这个不是太好用，' \
+           '超级垃圾股票，绝对的优质股票，买这股票就是去送钱，一定亏钱的，'
+    sentiment(texts=text)
