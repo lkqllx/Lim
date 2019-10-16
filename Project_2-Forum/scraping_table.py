@@ -193,9 +193,6 @@ class Stock:
             if not re.match('.+qa_list.aspx', df.loc[idx, 'Link']):
                 links.append(df.loc[idx, 'Link'])
                 links_indexs.append(idx)
-        # links = df['Link'][df['cmp'] == False].values.tolist()
-        # links = [link for link in links if not re.match('.+qa_list.aspx', link)]  # exclude the strange link
-
 
         """
         Scrape the year info given the links
@@ -282,12 +279,6 @@ def run_by_multiprocesses():
     os.chdir('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum')
     if not os.path.exists(f'data/historical/{date}'):  # global variable: date
         os.mkdir(f'data/historical/{date}')
-    # shanghai_list = pd.read_csv('data/target_list/SH.csv')
-    # shanghai_list = shanghai_list.iloc[:, 0].apply(lambda x: str(x))
-    # shanghai_list = shanghai_list.values.tolist()
-    # shenzhen_list = pd.read_csv('data/target_list/SZ.csv')
-    # shenzhen_list = shenzhen_list.iloc[:, 0].apply(lambda x: str(x).zfill(6))
-    # shenzhen_list = shenzhen_list.values.tolist()
 
     csi300 = pd.read_excel('data/target_list/csi300.xls', index_col=0).values[:, 3].tolist()
     csi300_list = []
