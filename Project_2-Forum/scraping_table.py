@@ -20,8 +20,8 @@ thread_local = threading.local()
 lock = threading.RLock()
 
 
-date = dt.datetime.strftime(dt.datetime.now(), "%Y-%m-%d")
-
+# date = dt.datetime.strftime(dt.datetime.now(), "%Y-%m-%d")
+date = '2019-10-15'
 
 def timer(fn):
     """
@@ -68,7 +68,7 @@ class Stock:
         :param web_base: the base link
         :return: None
         """
-        # print(f'Parsing - {self._ticker}')
+        print(f'Parsing - {self._ticker}')
         soup = bs4.BeautifulSoup(page, 'html.parser')
         target_list = soup.find_all(class_='articleh normal_post')
         for target in target_list:
@@ -90,11 +90,11 @@ class Stock:
         first_page = f'http://guba.eastmoney.com/list,{self._ticker},f_1.html'  # Use selenium to get the total pages
         try:
             with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
-                driver.set_page_load_timeout(120)
+                driver.set_page_load_timeout(30)
                 driver.get(first_page)
                 soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
         except Exception as e:
-            print(f'Error - {self._ticker} - {e}')
+            print(f'Error - {self._ticker} - {e} - Stock.run')
             return False
         elements = soup.find_all('span', class_='sumpage')
         self.total_pages = int(elements[0].text)
@@ -102,16 +102,16 @@ class Stock:
         """
         Download all the websites and join them into a single string variable (all_in_one) for parsing
         """
-        # global bar
-        # bar = Bar(f'Scraping {self._ticker}', max=self.total_pages)
+        global bar
+        bar = Bar(f'Scraping {self._ticker}', max=self.total_pages)
         sites = [f'http:/' \
                  f'/guba.eastmoney.com/list,{self._ticker},f_{count}.html' for count in range(self.total_pages)]
         download_all_sites(sites)
-        # bar.finish()
+        bar.finish()
         all_sites = sorted(all_websites.items(), key=lambda x: int(x[0]))
         all_in_one = ''.join([page for _, page in all_sites])
         _, time_parsing = self.parsing(all_in_one)
-        # print(f'Parsing Time - {int(time_parsing)} seconds')
+        print(f'Parsing Time - {int(time_parsing)} seconds')
         return True
 
 def get_session():
@@ -125,9 +125,9 @@ def download_site(url):
     Make sure the bar.next() will not be printed by different threads in the same time
     :param url: the url link to be scraped
     """
-    # lock.acquire()
-    # bar.next()
-    # lock.release()
+    lock.acquire()
+    bar.next()
+    lock.release()
     session = get_session()
     try:
         with session.request(method='GET', url=url, timeout=120) as response:
@@ -147,7 +147,7 @@ def download_all_sites(sites):
     Download all the pages to all_websites
     :param sites: the total sites to be scraped
     """
-    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
         executor.map(download_site, sites)
 
 
@@ -179,12 +179,13 @@ def reformat_date(df: pd.DataFrame):
     Scrape the year info given the links
     """
     global all_websites
-    # global bar
+    global bar
     all_websites = {}
-    # bar = Bar('Formatting', max=len(links))
+    bar = Bar('Formatting', max=len(links))
     target_years = []
     download_all_sites(links)
-    # bar.finish()
+    bar.finish()
+    links = [link for link in links if not re.match('.+qa_list.aspx', link)]  # exclude the strange link
     """To handle the marginal case that two links are the same"""
     sorted_all_websites = [all_websites[link] for link in links]
     for page in sorted_all_websites:
@@ -215,15 +216,21 @@ def run_by_date(ticker):
     :param ticker: the stock to be scraped
     :return: None
     """
-    # print('-' * 20, f'Doing {ticker}', '-' * 20)
-    if not os.path.exists(f'data/historical/{date}/{ticker}.csv'):
-        stock = Stock(ticker)
-        complete = stock.run()
-        if complete:
-            df = pd.DataFrame(stock.info_list, columns=['Time', 'Title', 'Author', 'Number of reads', 'Comments', 'Link'])
-            # df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)  # Can be removed
-            formated_df = reformat_date(df)
-            formated_df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)
+    print('-' * 20, f'Doing {ticker}', '-' * 20)
+    try:
+        if not os.path.exists(f'data/historical/{date}/{ticker}.csv'):
+            stock = Stock(ticker)
+            complete = stock.run()
+            if complete:
+                df = pd.DataFrame(stock.info_list, columns=['Time', 'Title', 'Author', 'Number of reads', 'Comments', 'Link'])
+                df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)  # Can be removed
+                print(f'Finish Downloading {ticker}')
+                time.sleep(3)
+                formated_df = reformat_date(df)
+                print(f'Finish Formatting {ticker}')
+                formated_df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)
+    except Exception as e:
+        print(f'Error - {ticker} - {e} - run_by_date')
 
 
 def run_by_multiprocesses():
@@ -231,21 +238,33 @@ def run_by_multiprocesses():
     Multiprocess function to speed up the program
     :return: None
     """
+
     os.chdir('C:/Users/andrew.li/Desktop/Projects/Lim/Project_2-Forum')
     if not os.path.exists(f'data/historical/{date}'):  # global variable: date
         os.mkdir(f'data/historical/{date}')
-    shanghai_list = pd.read_csv('data/target_list/SH.csv')
-    shanghai_list = shanghai_list.iloc[:, 0].apply(lambda x: str(x))
-    shanghai_list = shanghai_list.values.tolist()
-    shenzhen_list = pd.read_csv('data/target_list/SZ.csv')
-    shenzhen_list = shenzhen_list.iloc[:, 0].apply(lambda x: str(x).zfill(6))
-    shenzhen_list = shenzhen_list.values.tolist()
-    pool = mp.Pool(mp.cpu_count())  # We may use multiple processes to speed up the program but progress bar will not appear properly
-    with Bar('Processing', max=len(shanghai_list + shenzhen_list)) as bar:
-        for _ in pool.imap_unordered(run_by_date, shanghai_list + shenzhen_list):
-            bar.next()
+    # shanghai_list = pd.read_csv('data/target_list/SH.csv')
+    # shanghai_list = shanghai_list.iloc[:, 0].apply(lambda x: str(x))
+    # shanghai_list = shanghai_list.values.tolist()
+    # shenzhen_list = pd.read_csv('data/target_list/SZ.csv')
+    # shenzhen_list = shenzhen_list.iloc[:, 0].apply(lambda x: str(x).zfill(6))
+    # shenzhen_list = shenzhen_list.values.tolist()
+
+    csi300 = pd.read_excel('data/target_list/csi300.xls', index_col=0).values[:, 3].tolist()
+    csi300_list = []
+    for ticker in csi300:
+        if ticker >= 600000:
+            csi300_list.append(f'{ticker}')
+        else:
+            csi300_list.append(f'{ticker}'.zfill(6))
+    pool = mp.Pool(1)  # We may use multiple processes to speed up the program but progress bar will not appear properly
+    pool.map(run_by_date, csi300_list)
+    # with Bar('Processing', max=len(shanghai_list + shenzhen_list)) as bar:
+    #     for _ in pool.imap_unordered(run_by_date, shanghai_list + shenzhen_list):
+    #         bar.next()
 
 
 if __name__ == '__main__':
-    run_by_multiprocesses()
 
+    run_by_multiprocesses()
+    # df = pd.read_csv(f'data/historical/{date}/')
+    # reformat_date()
