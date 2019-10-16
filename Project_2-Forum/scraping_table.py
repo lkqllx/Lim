@@ -130,7 +130,7 @@ def download_site(url):
     lock.release()
     session = get_session()
     try:
-        with session.request(method='GET', url=url, timeout=120) as response:
+        with session.request(method='GET', url=url, timeout=30) as response:
             try:
                 count = re.findall('f_(\d+).html', url)[0]
             except Exception as e:
@@ -172,8 +172,16 @@ def reformat_date(df: pd.DataFrame):
     2018-09-09, 2018-09-07, 2016-10-06
     """
     df['cmp'] = np.where(df['diff'] <= dt.timedelta(0), True, False)
-    links = df['Link'][df['cmp'] == False].values.tolist()
-    links_indexs = df.index[df['cmp'] == False].values.tolist()
+    indexs = df.index[df['cmp'] == False].values.tolist()
+    links = []
+    links_indexs = []
+    for idx in indexs:
+        if not re.match('.+qa_list.aspx', df.loc[idx, 'Link']):
+            links.append(df.loc[idx, 'Link'])
+            links_indexs.append(idx)
+    # links = df['Link'][df['cmp'] == False].values.tolist()
+    # links = [link for link in links if not re.match('.+qa_list.aspx', link)]  # exclude the strange link
+
 
     """
     Scrape the year info given the links
@@ -185,29 +193,46 @@ def reformat_date(df: pd.DataFrame):
     target_years = []
     download_all_sites(links)
     bar.finish()
-    links = [link for link in links if not re.match('.+qa_list.aspx', link)]  # exclude the strange link
-    """To handle the marginal case that two links are the same"""
-    sorted_all_websites = [all_websites[link] for link in links]
-    for page in sorted_all_websites:
-        soup = bs4.BeautifulSoup(page, 'html.parser')
-        text = soup.find('div', class_='zwfbtime').text
-        year = re.findall('([\d]+)-[\d]+-[\d]+', text)[0]
-        target_years.append(year)
 
+    try:
+        """To handle the marginal case that two links are the same"""
+        sorted_all_websites = [all_websites[link] for link in links]
+    except Exception as e:
+        print(f'Error - {e} - links_reformatting')
+        print(links)
+        print(all_websites)
+        raise
+
+    for page in sorted_all_websites:
+        try:
+            soup = bs4.BeautifulSoup(page, 'html.parser')
+            text = soup.find('div', class_='zwfbtime').text
+            year = re.findall('([\d]+)-[\d]+-[\d]+', text)[0]
+            target_years.append(year)
+        except Exception as e:
+            print(f'Error - {e} - reformat_date - find_year_loop')
+            print(sorted_all_websites)
+            print(text)
+            raise e
     """
     Reformat the original DataFrame
     """
     for idx in range(len(links_indexs)):
-        if idx == len(links_indexs) - 1:
-            """Last index"""
-            df.loc[links_indexs[idx]:, 'Time'] = \
-                df.loc[links_indexs[idx]:, 'Time'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
+        try:
+            if idx == len(links_indexs) - 1:
+                """Last index"""
+                df.loc[links_indexs[idx]:, 'Time'] = \
+                    df.loc[links_indexs[idx]:, 'Time'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
 
-        else:
-            """Not last index, we will add year info between links_indexs[idx]:links_indexs[idx+1]"""
-            df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'] =  \
-                df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
+            else:
+                """Not last index, we will add year info between links_indexs[idx]:links_indexs[idx+1]"""
+                df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'] =  \
+                    df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
+        except Exception as e:
+            print(f'Error - {e} - reformat_date - reformat_loop')
+            raise e
     return df
+
 
 
 def run_by_date(ticker):
@@ -218,17 +243,20 @@ def run_by_date(ticker):
     """
     print('-' * 20, f'Doing {ticker}', '-' * 20)
     try:
-        if not os.path.exists(f'data/historical/{date}/{ticker}.csv'):
-            stock = Stock(ticker)
-            complete = stock.run()
-            if complete:
-                df = pd.DataFrame(stock.info_list, columns=['Time', 'Title', 'Author', 'Number of reads', 'Comments', 'Link'])
-                df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)  # Can be removed
-                print(f'Finish Downloading {ticker}')
-                time.sleep(3)
-                formated_df = reformat_date(df)
-                print(f'Finish Formatting {ticker}')
-                formated_df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)
+        complete = False
+        max_epoch = 5
+        while (not complete) and (max_epoch > 0):
+            max_epoch -= 1
+            if not os.path.exists(f'data/historical/{date}/{ticker}.csv'):
+                stock = Stock(ticker)
+                complete = stock.run()
+                if complete:
+                    df = pd.DataFrame(stock.info_list, columns=['Time', 'Title', 'Author', 'Number of reads', 'Comments', 'Link'])
+                    df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)  # Can be removed
+                    print(f'Finish Downloading {ticker}')
+                    formated_df = reformat_date(df)
+                    print(f'Finish Formatting {ticker}')
+                    formated_df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)
     except Exception as e:
         print(f'Error - {ticker} - {e} - run_by_date')
 
@@ -264,7 +292,6 @@ def run_by_multiprocesses():
 
 
 if __name__ == '__main__':
-
     run_by_multiprocesses()
     # df = pd.read_csv(f'data/historical/{date}/')
     # reformat_date()
