@@ -16,7 +16,7 @@ lock = threading.RLock()
 def prices(targets: list, start='2010-01-01', end='2019-10-15'):
     start = dt.datetime.strptime(start, '%Y-%m-%d')
     end = dt.datetime.strptime(end, '%Y-%m-%d')
-''
+
     with Bar('Downloading', max=len(targets)) as bar:
         def download(target):
             try:
