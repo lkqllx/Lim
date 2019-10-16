@@ -88,8 +88,7 @@ class Stock:
         For the stock, function will require all the pages and parse the website
         :return: True/False indicating that whether the stock is acquired successfully or not
         """
-        global all_websites  # Declaim a global variable for downloading all the websites
-        all_websites = {}
+
         first_page = f'http://guba.eastmoney.com/list,{self._ticker}_1.html'  # Use selenium to get the total pages
         try:
             with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
@@ -105,12 +104,15 @@ class Stock:
         """
         Download all the websites and join them into a single string variable (all_in_one) for parsing
         """
+        global all_websites  # Declaim a global variable for downloading all the websites
+        all_websites = {}
         global bar
         bar = Bar(f'Scraping {self._ticker}', max=self.total_pages)
         sites = [f'http:/' \
                  f'/guba.eastmoney.com/list,{self._ticker}_{count}.html' for count in range(self.total_pages)]
         download_all_sites(sites)
         bar.finish()
+        local_dict = all_websites
         all_sites = sorted(all_websites.items(), key=lambda x: int(x[0]))
         all_in_one = ''.join([page for _, page in all_sites])
         _, time_parsing = self.parsing(all_in_one)
@@ -135,7 +137,7 @@ def download_site(url):
     try:
         with session.request(method='GET', url=url, timeout=30) as response:
             try:
-                count = re.findall('f_(\d+).html', url)[0]
+                count = re.findall('_(\d+).html', url)[0]
             except Exception as e:
                 count = url
             lock.acquire()
@@ -276,7 +278,7 @@ def run_by_multiprocesses():
     # shenzhen_list = shenzhen_list.iloc[:, 0].apply(lambda x: str(x).zfill(6))
     # shenzhen_list = shenzhen_list.values.tolist()
 
-    csi300 = pd.read_excel('data/target_list/csi300_sz.xls', index_col=0).values[:, 3].tolist()
+    csi300 = pd.read_excel('data/target_list/csi300.xls', index_col=0).values[:, 3].tolist()
     csi300_list = []
     for ticker in csi300:
         if ticker >= 600000:
