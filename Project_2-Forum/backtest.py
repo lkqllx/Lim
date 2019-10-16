@@ -15,15 +15,33 @@ Note
         Solution -> The yahoo seems to be fine with this but Bloomberg will use the previous available data
         to replace all the unavailable prices. So we need to exclude those period if BBG is used.
 
-    4.  The total comparable should be greater 200 stocks for crossing signals
+    4.  The total comparable stocks should be greater 200 for crossing signals
+
+    5.  We need to care about the number of posts by using historical average (like 20 days average)
+        Reason -> If for stocks A and B,
+                                    Stock A     Stock B
+                    -> 2018-08-07     1          1000
+                    -> 2018-08-08     2          1200
+                    -> 2018-08-09     4          1500
+        The trivial increment will be:
+                                   Stock A     Stock B
+                    -> 2018-08-08     2          1.2
+                    -> 2018-08-09     2          1.25
+        This trivial solution cannot show stock A attracts more attention than B
+        Solution -> Instead of ranking the trivial increment matrix, we will further time it by log(ave(posts, days=20))
+        which will give us a better sense about the market.
+        For this scenario, we cannot say A is better than B so we time a log(ave_post)
+        If we suppose ave(A, 20) = 2, ave(B, 20) = 1200, the updated matrix will be:
+                                   Stock A     Stock B
+                    -> 2018-08-08  2*log(2)    1.2*log(1000)
+                    -> 2018-08-09  2*log(2)    1.25*log(1000)
 """
-import pandas_datareader as web
 import pandas as pd
 import datetime as dt
 from progress.bar import Bar
 import re
 import os
-
+import numpy as np
 
 class SelfSignal:
     """
@@ -41,36 +59,46 @@ class CrossSignal:
     """
     A trading signal matrix will be created by comparing among the universe
 
-    The cross_stocks_forum_matrix
-    Sample:
+    The original posts matrix is
+    Sample of stock_post_matrix:
+                        Stock A     Stock B     Stock C
+        -> 2018-08-07     17          10          10
+        -> 2018-08-08     34          30          10
+        -> 2018-08-09     30          34          10
+
+
+    The trivial_change_matrix
+    Sample of trivial_change_matrix:
                         Stock A     Stock B     Stock C
         -> 2018-08-08    34/17       30/10       10/10
-        -> 2018-08-09    30/10       34/17       10/10
+        -> 2018-08-09    30/34       34/30       10/10
 
-    The ranking_matrix = rank(cross-stocks forum matrix)
-    Sample:
+    The trivial_ranking_matrix = rank(cross-stocks forum matrix)
+    Sample of ranking_trivial_matrix:
                         Stock A     Stock B     Stock C
         -> 2018-08-08      2           1            3
-        -> 2018-08-09      1           2            3
+        -> 2018-08-09      3           1            2
 
     The dynamic weighting scheme will be
-                weights = stock's daily changes / sum(all stocks changes, at_day_n)
-    Sample:
+                weight of A at_time_t = stock A's change at_time_t / sum(all stocks changes, at_time_t)
+    Sample of dynamic_weights:
                         Stock A     Stock B     Stock C
         -> 2018-08-08     1/3         1/2          1/6
-        -> 2018-08-09     1/2         1/3          1/6
+        -> 2018-08-09     0.29        0.38         0.33
 
     The equal weighting scheme will be
-    Sample:
+    Sample of equal_weights:
                         Stock A     Stock B     Stock C
         -> 2018-08-08     1/3         1/3          1/3
         -> 2018-08-09     1/3         1/3          1/3
+
     """
 
-    def __init__(self, start='2010-01-01', end='2019-10-15'):
+    def __init__(self, start='2010-01-01', end='2019-10-15', number_of_days_for_averaing=20):
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
         self._end = dt.datetime.strptime(end, '%Y-%m-%d')
         self.date_list = [self._end - dt.timedelta(idx) for idx in range((self._end - self._start).days)]
+        self.number_of_days_for_averaing = number_of_days_for_averaing
         self.preprocess()
 
     def preprocess(self):
@@ -87,29 +115,53 @@ class CrossSignal:
                                                     index=pd.to_datetime(
                                                         curr_df.groupby('Date').count().index, format='%Y-%m-%d'),
                                                     columns=[ticker])
-
+                curr_stock_posts_vec = curr_stock_posts_vec[(curr_stock_posts_vec.index >= self._start) &
+                                                            (curr_stock_posts_vec.index <= self._end)]
                 self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
+        self.stocks_post_matrix = self.stocks_post_matrix.fillna(1)
 
     @staticmethod
+    def add_tradability(df):
+        df['tradability'] = df.count(axis=1)
+        return df
+
     @property
-    def cross_stocks_forum_matrix():
-        pass
+    def trivial_change_matrix(self):
+        return self.stocks_post_matrix / self.stocks_post_matrix.shift(1)
 
+    @property
+    def ranking_trivial_matrix(self):
+        return self.trivial_change_matrix.rank(1, method='first', ascending=False)
 
+    @property
+    def log_change_matrix(self):
+        ave_matrix = self.stocks_post_matrix.rolling(window=self.number_of_days_for_averaing).mean()
+        log_matrix = np.log(ave_matrix)
+        return self.trivial_change_matrix * log_matrix
+
+    @property
+    def log_ranking_matrix(self):
+        return self.log_change_matrix.rank(1, method='first', ascending=False)
 
 
 class Backtest:
     """
     Backtest the trading signal for a single stock
     """
-    pass
+    def __init__(self, signal):
+        self._sginal = signal
 
 
-def run():
+
+def run_backtest():
     cs = CrossSignal()
-
-    pass
+    print(cs.stocks_post_matrix)
+    print(cs.trivial_change_matrix)
+    print(cs.ranking_trivial_matrix)
+    print(cs.add_tradability(cs.log_change_matrix))
+    print(cs.add_tradability((cs.log_ranking_matrix)))
+    print()
 
 
 if __name__ == '__main__':
-    run()
+    run_backtest()
