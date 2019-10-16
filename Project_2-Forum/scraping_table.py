@@ -113,7 +113,7 @@ class Stock:
         download_all_sites(sites)
         bar.finish()
         local_dict = all_websites
-        all_sites = sorted(all_websites.items(), key=lambda x: int(x[0]))
+        all_sites = sorted(local_dict.items(), key=lambda x: int(x[0]))
         all_in_one = ''.join([page for _, page in all_sites])
         _, time_parsing = self.parsing(all_in_one)
         print(f'Parsing Time - {int(time_parsing)} seconds')
