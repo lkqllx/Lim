@@ -88,7 +88,7 @@ def send_email_by_smtp(subject="", body=""):
             server.sendmail(sender_email, receiver.split(','), msg.as_string())
     except Exception as e:
         # Print any error messages to stdout
-        print(e)
+        print(str(e))
     finally:
         server.quit()
 
@@ -194,7 +194,7 @@ def run():
         try:
             run_once()
         except Exception as e:
-            print(f'Unexpected error - {e}')
+            print(f'Unexpected error - {str(e)}')
         time.sleep(60 * 10)  # 60 secs (1 minute) * 10 -> 10 mins
 
 
