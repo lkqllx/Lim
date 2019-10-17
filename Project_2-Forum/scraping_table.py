@@ -118,7 +118,7 @@ class Stock:
         # global bar
         # bar = Bar(f'Scraping {self._ticker}', max=self.total_pages)
         sites = [f'http:/' \
-                 f'/guba.eastmoney.com/list,{self._ticker}_{count}.html' for count in range(self.total_pages)]
+                 f'/guba.eastmoney.com/list,{self._ticker},f_{count}.html' for count in range(self.total_pages)]
         self.download_all_sites(sites)
         # bar.finish()
 
@@ -149,7 +149,7 @@ class Stock:
         try:
             with session.request(method='GET', url=url, timeout=60) as response:
                 try:
-                    count = re.findall('list,[\w\d]+_(\d+).html', url)[0]
+                    count = re.findall('list,[\w\d]+,f_(\d+).html', url)[0]
                 except Exception as e:
                     count = url
                 lock.acquire()
@@ -288,7 +288,9 @@ def run_by_multiprocesses():
             csi300_list.append(f'{ticker}')
         else:
             csi300_list.append(f'{ticker}'.zfill(6))
-    pool = mp.Pool(8)  # We may use multiple processes to speed up the program but progress bar will not appear properly
+
+    csi300_list = ['600004']
+    pool = mp.Pool(1)  # We may use multiple processes to speed up the program but progress bar will not appear properly
     # pool.map(run_by_date, csi300_list)
     with Bar('Processing', max=len(csi300_list)) as bar:
         for _ in pool.imap_unordered(run_by_date, csi300_list):
