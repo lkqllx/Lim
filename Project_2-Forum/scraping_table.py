@@ -147,9 +147,9 @@ class Stock:
         # lock.release()
         session = self.get_session()
         try:
-            with session.request(method='GET', url=url, timeout=30) as response:
+            with session.request(method='GET', url=url, timeout=60) as response:
                 try:
-                    count = re.findall('_(\d+).html', url)[0]
+                    count = re.findall('list,[\w\d]+_(\d+).html', url)[0]
                 except Exception as e:
                     count = url
                 lock.acquire()
@@ -163,7 +163,7 @@ class Stock:
         Download all the pages to all_websites
         :param sites: the total sites to be scraped
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
             executor.map(self.download_site, sites)
 
     def reformat_date(self, df: pd.DataFrame):
@@ -277,7 +277,7 @@ def run_by_multiprocesses():
     :return: None
     """
 
-    os.chdir('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum')
+    os.chdir('C:/Users/andrew.li/Desktop/Projects/Lim/Project_2-Forum/')
     if not os.path.exists(f'data/historical/{date}'):  # global variable: date
         os.mkdir(f'data/historical/{date}')
 
