@@ -289,12 +289,12 @@ def run_by_multiprocesses():
         else:
             csi300_list.append(f'{ticker}'.zfill(6))
 
-    csi300_list = ['600004']
-    pool = mp.Pool(1)  # We may use multiple processes to speed up the program but progress bar will not appear properly
-    # pool.map(run_by_date, csi300_list)
-    with Bar('Processing', max=len(csi300_list)) as bar:
-        for _ in pool.imap_unordered(run_by_date, csi300_list):
-            bar.next()
+    # csi300_list = ['600004']
+    pool = mp.Pool(8)  # We may use multiple processes to speed up the program but progress bar will not appear properly
+    pool.map(run_by_date, csi300_list)
+    # with Bar('Processing', max=len(csi300_list)) as bar:
+    #     for _ in pool.imap_unordered(run_by_date, csi300_list):
+            # bar.next()
 
 
 if __name__ == '__main__':
