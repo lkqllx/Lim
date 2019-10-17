@@ -28,6 +28,7 @@ lock = threading.RLock()
 # date = dt.datetime.strftime(dt.datetime.now(), "%Y-%m-%d")
 date = '2019-10-15'
 
+
 def timer(fn):
     """
     Perform as a timer for function
@@ -120,10 +121,10 @@ class Stock:
                  f'/guba.eastmoney.com/list,{self._ticker}_{count}.html' for count in range(self.total_pages)]
         self.download_all_sites(sites)
         # bar.finish()
+
         all_sites = sorted(self.all_websites.items(), key=lambda x: int(x[0]))
         time_parsing = 0
-        # all_in_one = ''.join([page for _, page in all_sites])
-        # _, time_parsing = self.parsing(all_in_one)
+
         print(f'Parsing - {self._ticker}')
         for _, page in all_sites:
             _, time_elapsed = self.parsing(page)
