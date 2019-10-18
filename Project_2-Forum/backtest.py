@@ -170,7 +170,7 @@ class CrossSignal:
     @property
     def equal_weight_rank_signal(self):
         daily_post_rank_matrix = self.stocks_post_matrix.rank(1, method='first', ascending=True)
-        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.5).round(0)  # The place to change percentage
+        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.95).round(0)  # The place to change percentage
         daily_post_rank_matrix = daily_post_rank_matrix.gt(rank_max, axis=0)
 
         daily_post_change_rank_matrix = self.ranking_trivial_matrix
@@ -189,14 +189,15 @@ class Backtest:
     Backtest the trading signal for a single stock. We assume that the number of posts at day t minus the number of
     posts at day t - 1 will contribute to the return at day t.
     """
-    def __init__(self, signal: pd.DataFrame, start='2015-01-01', end='2019-07-31', number_of_skipping_days=60):
+    def __init__(self, signal: pd.DataFrame, start='2015-01-01', end='2019-07-31', number_of_skipping_days=60,
+                 ret_type='ret_cmo'):
         self._signal = signal.fillna(0)
         self._tickers = signal.columns.values.tolist()
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
         self._end = dt.datetime.strptime(end, '%Y-%m-%d')
         self.date_list = [self._end - dt.timedelta(idx) for idx in range((self._end - self._start).days + 1)]
         self.number_of_skipping_days = number_of_skipping_days  # To skip the IPO period
-        self.preprocess()
+        self.preprocess(ret_type)
         self.cash = 10_000_000
         self.equity_value = 0
         self.total_value = 0
@@ -211,7 +212,7 @@ class Backtest:
         df['available_data_in_row'] = df.count(axis=1)
         return df
 
-    def preprocess(self):
+    def preprocess(self, ret_type):
         """Build a multi-indexed matrix with ticker as level 1, [close, open, ret] as level 2, timestamp as level 3"""
         for ticker in self._tickers:
             ticker = str(ticker)
@@ -233,7 +234,7 @@ class Backtest:
         self.prices_matrix.fillna(0, inplace=True)
 
         # Choose the preferred ret
-        self.prices_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == 'cmo_ret']
+        self.prices_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == ret_type]
 
         # Critical step to drop level of columns
         self.prices_matrix.columns = self.prices_matrix.columns.get_level_values(0)
@@ -289,14 +290,21 @@ class Backtest:
                     3. We can buy the stocks at the close price of day N
                 """
 
-                # TODO logic of backtesting is wrong
-                today_target_position = pd.DataFrame([self.yesterday_inventory.values,
+                # Any none zero will equal to one
+                # 1 or 0 -> 1,
+                # 0 or 1 -> 1,
+                # 1 or 1 -> 1,
+                # 0 or 0 -> 0
+                # today_position is different from the updated inventory position since we assume
+                # we will get profit from yesturday + today_signals * today_tradability today
+                # but the remaining invection is updated by self.update_inventory(today_signals, today_tradability)
+                today_position = pd.DataFrame([self.yesterday_inventory.values,
                                                 (today_signals * today_tradability).values]).any(axis=0)
 
                 self.update_inventory(today_signals, today_tradability)  # Update inventory
 
-                if not (np.all(today_target_position == False) or np.all(today_rets == 0)):
-                    self.total_value += np.sum(today_rets.values * today_target_position.values)
+                if not (np.all(today_position == False) or np.all(today_rets == 0)):
+                    self.total_value += np.sum(today_rets.values * today_position.values)
                     self.total_value_history.append(self.total_value)
                     self.valid_dates.append(date)
 
