@@ -47,6 +47,7 @@ import numpy as np
 from snownlp import SnowNLP
 from copy import deepcopy
 import matplotlib.pyplot as plt
+import pandas_datareader as web
 
 class SelfSignal:
     """
@@ -190,7 +191,7 @@ class Backtest:
     posts at day t - 1 will contribute to the return at day t.
     """
     def __init__(self, signal: pd.DataFrame, start='2015-01-01', end='2019-07-31', number_of_skipping_days=60,
-                 ret_type='ret_cmo'):
+                 ret_type='cmo_ret'):
         self._signal = signal.fillna(0)
         self._tickers = signal.columns.values.tolist()
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
@@ -318,7 +319,12 @@ class Backtest:
 
     def plot(self):
         plt.figure(figsize=(20, 16))
-        plt.plot(self.valid_dates, self.total_value_history)
+        csi300 = web.get_data_yahoo('000300.SS', self._start, self._end).Close
+        plt.plot(csi300.index, csi300.values, color='navy', linewidth=2, linestyle='dashed', label="CSI300")
+        plt.show()
+
+        plt.figure(figsize=(20, 16))
+        plt.plot(self.valid_dates, self.total_value_history, color='red', linewidth=2, label="PnL")
         plt.show()
 
 
