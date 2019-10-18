@@ -136,6 +136,10 @@ class CrossSignal:
                     # This is to make the Hour from 15 to 0AM
                     curr_stock_posts_vec = curr_stock_posts_vec.resample('D').sum()
 
+                    # Critical step is to add one day to the vector since this will be used to
+                    # predict the return of next day
+                    curr_stock_posts_vec.index = pd.DatetimeIndex(curr_stock_posts_vec.index) + pd.DateOffset(1)
+
                     # This is to fix the date range
                     curr_stock_posts_vec = curr_stock_posts_vec[
                         (curr_stock_posts_vec.index >= self._start) & (curr_stock_posts_vec.index <= self._end)]
@@ -297,7 +301,6 @@ class Backtest:
                     self.valid_dates.append(date)
 
         self.plot()
-
 
     def update_inventory(self, today_signals, today_tradability):
         """Only update the inventory when the tradability is True"""
