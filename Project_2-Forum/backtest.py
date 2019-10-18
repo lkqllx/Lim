@@ -36,6 +36,8 @@ Note
                     -> 2018-08-08  2*log(2)    1.2*log(1000)
                     -> 2018-08-09  2*log(2)    1.25*log(1000)
 """
+import matplotlib
+matplotlib.rcParams['backend'] = 'TkAgg'
 import pandas as pd
 import datetime as dt
 from progress.bar import Bar
@@ -44,6 +46,7 @@ import os
 import numpy as np
 from snownlp import SnowNLP
 from copy import deepcopy
+import matplotlib.pyplot as plt
 
 class SelfSignal:
     """
@@ -59,7 +62,8 @@ class SelfSignal:
 
 class CrossSignal:
     """
-    A trading signal matrix will be created by comparing among the universe
+    A trading signal matrix will be created by comparing among the universe. A row of signal is supposed to be
+    the weightings of that day.
 
     The original posts matrix is
     Sample of stock_post_matrix:
@@ -96,63 +100,107 @@ class CrossSignal:
 
     """
 
-    def __init__(self, start='2010-01-01', end='2019-10-15', number_of_days_for_averaing=20):
+    def __init__(self, start='2015-01-01', end='2019-07-31', number_of_days_for_averaging=20):
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
         self._end = dt.datetime.strptime(end, '%Y-%m-%d')
-        self.date_list = [self._end - dt.timedelta(idx) for idx in range((self._end - self._start).days)]
-        self.number_of_days_for_averaing = number_of_days_for_averaing
+        self.date_list = [self._end - dt.timedelta(idx) for idx in range((self._end - self._start).days + 1)]
+        self.number_of_days_for_averaging = number_of_days_for_averaging
         self.preprocess()
 
     def preprocess(self):
-        files = os.listdir('data/historical/2019-10-15')
-        files = [file for file in files if re.match('[\d]+.csv', file)]
-        tickers = [file.split('.')[0] for file in files]
-        self.stocks_post_matrix = pd.DataFrame(index=self.date_list)
-        with Bar('CrossSignal Preprocessing', max=len(files)) as bar:
-            for ticker, file in zip(tickers, files):
-                bar.next()
-                curr_df = pd.read_csv(f'data/historical/2019-10-15/{file}')
-                curr_df['Date'] = curr_df['Time'].apply(lambda x: re.findall('([\d]{4}-[\d]{2}-[\d]{2})', x)[0])
-                curr_stock_posts_vec = pd.DataFrame(curr_df.groupby('Date').count().Time.values,
-                                                    index=pd.to_datetime(
-                                                        curr_df.groupby('Date').count().index, format='%Y-%m-%d'),
-                                                    columns=[ticker])
-                curr_stock_posts_vec = curr_stock_posts_vec[(curr_stock_posts_vec.index >= self._start) &
-                                                            (curr_stock_posts_vec.index <= self._end)]
-                self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
-        self.stocks_post_matrix = self.stocks_post_matrix.fillna(1)
+        try:
+            self.stocks_post_matrix = pd.read_csv('data/stocks_post_matrix.csv', index_col=0, parse_dates=True)
+        except:
+            files = os.listdir('data/historical/2019-10-15')
+            files = [file for file in files if re.match('[\d]+.csv', file)]
+            tickers = [file.split('.')[0] for file in files]
+            self.stocks_post_matrix = pd.DataFrame(index=self.date_list)
+            with Bar('CrossSignal Preprocessing', max=len(files)) as bar:
+                for ticker, file in zip(tickers, files):
+                    bar.next()
+                    df = pd.read_csv(f'/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/'
+                                     f'Project_2-Forum/data/historical/2019-10-15/{ticker}.csv',
+                                     index_col=0, parse_dates=True, low_memory=False)
+                    df = df.resample('3H').count()
+                    df.reset_index(inplace=True)
+
+                    # We need to set hour column to select the period between 9AM:3PM
+                    df['Hour'] = df['Time'].apply(lambda x: x.hour)
+                    df.loc[(df['Hour'] < 15) & (df['Hour'] >= 9), 'Title'] = 0
+
+                    # Resample with a base = 15 and freq = 24H
+                    # Since we have made 9AM-3PM = 0, so we can sum the 24 hour starting from 3PM
+                    curr_stock_posts_vec = pd.Series(df['Title'].values, index=df.Time, name=ticker)
+                    curr_stock_posts_vec = curr_stock_posts_vec.groupby(pd.Grouper(freq='24H', base=15)).sum()
+
+                    # This is to make the Hour from 15 to 0AM
+                    curr_stock_posts_vec = curr_stock_posts_vec.resample('D').sum()
+
+                    # This is to fix the date range
+                    curr_stock_posts_vec = curr_stock_posts_vec[
+                        (curr_stock_posts_vec.index >= self._start) & (curr_stock_posts_vec.index <= self._end)]
+                    self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
+
+            # TODO I change the filled value to 0 from 1, we need to confirm the impact
+            self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
+            self.stocks_post_matrix.to_csv('data/stocks_post_matrix.csv')
 
     @property
     def trivial_change_matrix(self):
-        return self.stocks_post_matrix / self.stocks_post_matrix.shift(1)
+        return (self.stocks_post_matrix / self.stocks_post_matrix.shift(1)).replace([np.inf, -np.inf], np.nan)
 
     @property
     def ranking_trivial_matrix(self):
-        return self.trivial_change_matrix.rank(1, method='first', ascending=False)
+        return self.trivial_change_matrix.rank(1, method='first', ascending=True)
 
     @property
     def log_change_matrix(self):
-        ave_matrix = self.stocks_post_matrix.rolling(window=self.number_of_days_for_averaing).mean()
+        ave_matrix = self.stocks_post_matrix.rolling(window=self.number_of_days_for_averaging).mean()
         log_matrix = np.log(ave_matrix)
-        return self.trivial_change_matrix * log_matrix
+        return (self.trivial_change_matrix * log_matrix).replace([np.inf, -np.inf], np.nan)
 
     @property
     def log_ranking_matrix(self):
-        return self.log_change_matrix.rank(1, method='first', ascending=False)
+        return self.log_change_matrix.rank(1, method='first', ascending=True)
+
+    @property
+    def equal_weight_rank_signal(self):
+        daily_post_rank_matrix = self.stocks_post_matrix.rank(1, method='first', ascending=True)
+        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.5).round(0)  # The place to change percentage
+        daily_post_rank_matrix = daily_post_rank_matrix.gt(rank_max, axis=0)
+
+        daily_post_change_rank_matrix = self.ranking_trivial_matrix
+        change_rank_max = (daily_post_change_rank_matrix.max(axis=1) * 0.75).round(0)
+        daily_post_change_rank_matrix = daily_post_change_rank_matrix.gt(change_rank_max, axis=0)
+
+        # At here, True: buy False: No position
+        whether_to_buy_matrix = daily_post_rank_matrix | daily_post_change_rank_matrix
+
+        weights = whether_to_buy_matrix.apply(lambda row: row / 1, axis=1)  # return 1 means buy and 0 to sell
+        return weights
 
 
 class Backtest:
     """
-    Backtest the trading signal for a single stock
+    Backtest the trading signal for a single stock. We assume that the number of posts at day t minus the number of
+    posts at day t - 1 will contribute to the return at day t.
     """
-    def __init__(self, signal: pd.DataFrame, start='2010-01-01', end='2019-10-15', number_of_skipping_days=20):
-        self._sginal = signal
+    def __init__(self, signal: pd.DataFrame, start='2015-01-01', end='2019-07-31', number_of_skipping_days=60):
+        self._signal = signal.fillna(0)
         self._tickers = signal.columns.values.tolist()
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
         self._end = dt.datetime.strptime(end, '%Y-%m-%d')
-        self.date_list = [self._end - dt.timedelta(idx) for idx in range((self._end - self._start).days)]
-        self.number_of_skipping_days = 20  # To skip the IPO period
+        self.date_list = [self._end - dt.timedelta(idx) for idx in range((self._end - self._start).days + 1)]
+        self.number_of_skipping_days = number_of_skipping_days  # To skip the IPO period
         self.preprocess()
+        self.cash = 10_000_000
+        self.equity_value = 0
+        self.total_value = 0
+        self.cash_history = []
+        self.equity_value_history = []
+        self.total_value_history = []
+        self.valid_dates = []
+        self.lot_size = 100
 
     @staticmethod
     def number_of_available_data_in_row(df):
@@ -160,35 +208,107 @@ class Backtest:
         return df
 
     def preprocess(self):
-        """Build a close prices matrix"""
-        self.prices_matrix = pd.DataFrame(index=self.date_list)
+        """Build a multi-indexed matrix with ticker as level 1, [close, open, ret] as level 2, timestamp as level 3"""
         for ticker in self._tickers:
-            curr_df = pd.read_csv(f'data/prices/{ticker}.csv', index_col=0, parse_dates=True).Close
-            curr_df.name = ticker
-            self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
+            ticker = str(ticker)
+            curr_df = pd.read_csv(f'data/prices/{ticker}.csv', index_col=0, low_memory=False,
+                                  names=pd.MultiIndex.from_product([[ticker], ['open', 'close']]))[1:]
+            curr_df.index = pd.to_datetime(curr_df.index)
+            curr_df = curr_df[(curr_df.index >= self._start) & (curr_df.index <= self._end)]
+            curr_df = curr_df.astype(float)
+            curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] - curr_df.loc[:, (ticker, 'open')]) / \
+                                              curr_df.loc[:, (ticker, 'open')]
+            curr_df.loc[:, (ticker, 'cmc_ret')] = (curr_df.loc[:, (ticker, 'close')] -
+                                                   curr_df.loc[:, (ticker, 'close')].shift(1)) / \
+                                                   curr_df.loc[:, (ticker, 'close')].shift(1)
+            try:
+                self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
+            except:
+                self.prices_matrix = curr_df
 
+        self.prices_matrix.fillna(0, inplace=True)
 
+        # Choose the preferred ret
+        self.prices_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == 'cmo_ret']
+
+        # Critical step to drop level of columns
+        self.prices_matrix.columns = self.prices_matrix.columns.get_level_values(0)
+
+        # Match the dates list
+        self.prices_matrix = pd.concat([pd.DataFrame(index=self.date_list), self.prices_matrix], axis=1)
+        self.yesterday_inventory = pd.Series(np.repeat(0, self.prices_matrix.shape[1]),
+                                                index=self.prices_matrix.columns)
+
+    @property
     def tradability_matrix(self):
         """
         This function will do three things
-            1.  Skip IPO periods
-            2.  Skip the day if the stock increase/decrease by 10%
-            3.  Skip holiday, halted dates
-        :return:
+            1.  Skip IPO periods $DONE$
+            2.  Skip the day if the stock increase/decrease by 10%  $TODO$
+            3.  Skip holiday, halted dates $DONE$
+        :return: tradability_matrix in which values are either 1 or 0
         """
         prices_matrix = deepcopy(self.prices_matrix)
-        valid_index = [prices_matrix[col].first_valid_index() for col in prices_matrix.columns]
-        for valid_idx, col in zip(valid_index, prices_matrix.columns):
-            prices_matrix.loc[valid_index:valid_index + self.number_of_skipping_days, col] = \
-                np.repeat(np.nan, self.number_of_skipping_days)
+
+        """Here will exclude the IPO prices by replacing the first n available prices into Zero"""
+        for col in prices_matrix.columns:
+            valid_index = prices_matrix[col].first_valid_index()
+            prices_matrix.loc[[valid_index + dt.timedelta(idx)
+                               for idx in range(self.number_of_skipping_days)], col] = np.nan
+
+        return pd.DataFrame(np.where(np.isnan(prices_matrix), 0, 1),
+                            index=prices_matrix.index,
+                            columns=prices_matrix.columns).fillna(0)
+
+    def simulate(self):
+        """
+        Question about backtesting
+            1.  How we trade? For now, I will buy a fixed amount of value
+            2.
+        """
+        with Bar('Backtesting', max=self.prices_matrix.shape[0]) as bar:
+
+            for date in self.prices_matrix.index:
+                bar.next()
+                today_signals = self._signal.loc[date, :]
+                today_rets = self.prices_matrix.loc[date, :]
+                today_rets = today_rets.fillna(0)
+                today_tradability = self.tradability_matrix.loc[date, :]
+
+                """
+                Backtesting
+                
+                Suppose we are at day N
+                Assumption:
+                    1. We can cash out the holdings by using the prices of day N - 1 at day N.
+                    2. We can only long the equities
+                    3. We can buy the stocks at the close price of day N
+                """
+
+                # TODO logic of backtesting is wrong
+                today_target_position = pd.DataFrame([self.yesterday_inventory.values,
+                                                (today_signals * today_tradability).values]).any(axis=0)
+
+                self.update_inventory(today_signals, today_tradability)  # Update inventory
+
+                if not (np.all(today_target_position == False) or np.all(today_rets == 0)):
+                    self.total_value += np.sum(today_rets.values * today_target_position.values)
+                    self.total_value_history.append(self.total_value)
+                    self.valid_dates.append(date)
+
+        self.plot()
 
 
+    def update_inventory(self, today_signals, today_tradability):
+        """Only update the inventory when the tradability is True"""
+        for idx in range(self.yesterday_inventory.size):
+            if today_tradability[idx]:
+                self.yesterday_inventory[idx] = today_signals[idx]
 
-
-
-        self.tradability_matrix = pd.DataFrame(np.where(np.isnan(self.prices_matrix), 0, 1),
-                                               index=self.prices_matrix.index,
-                                               columns=self.prices_matrix.columns)
+    def plot(self):
+        plt.figure(figsize=(20, 16))
+        plt.plot(self.valid_dates, self.total_value_history)
+        plt.show()
 
 
 def sentiment(texts: str):
@@ -200,23 +320,23 @@ def sentiment(texts: str):
 
 
 def run_backtest():
-    start = '2010-01-01'
-    end = '2019-10-15'
+    start = '2015-01-01'
+    end = '2019-07-31'
     cs = CrossSignal(start=start, end=end)
-    print(cs.stocks_post_matrix)
-    print(cs.trivial_change_matrix)
-    print(cs.ranking_trivial_matrix)
-    print(cs.log_change_matrix)
-    print(cs.log_ranking_matrix)
+    # print(cs.equal_weight_rank_signal)
 
-    bs = Backtest(cs.log_change_matrix, start=start, end=end)
-
-    print()
+    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
+    bs.simulate()
 
 
 if __name__ == '__main__':
-    # run_backtest()
+    run_backtest()
 
-    text = '快买这个股票，这个股票一定能够大涨，这个不是太好用，' \
-           '超级垃圾股票，绝对的优质股票，买这股票就是去送钱，一定亏钱的，'
-    sentiment(texts=text)
+
+    # df = pd.read_csv(f'/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/'
+    #                  f'Project_2-Forum/data/historical/2019-10-15/{600010}.csv')
+    # real_text = df.loc[:20, 'Title'].values.tolist()
+    # text = '快买这个股票，这个股票一定能够大涨，这个不是太好用，' \
+    #        '超级垃圾股票，绝对的优质股票，买这股票就是去送钱，一定亏钱的，这个股票不太好可能亏钱'
+    # sentiment(texts=text)
+    # sentiment('，'.join(real_text))
