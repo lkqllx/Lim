@@ -46,8 +46,9 @@ import os
 import numpy as np
 from snownlp import SnowNLP
 from copy import deepcopy
+from pyecharts.charts import Line
+import pyecharts.options as opts
 import matplotlib.pyplot as plt
-import pandas_datareader as web
 
 class SelfSignal:
     """
@@ -110,7 +111,7 @@ class CrossSignal:
 
     def preprocess(self):
         try:
-            self.stocks_post_matrix = pd.read_csv('data/stocks_post_matrix.csv', index_col=0, parse_dates=True)
+            self.stocks_post_matrix = pd.read_csv('data/interim/stocks_post_matrix.csv', index_col=0, parse_dates=True)
         except:
             files = os.listdir('data/historical/2019-10-15')
             files = [file for file in files if re.match('[\d]+.csv', file)]
@@ -148,7 +149,7 @@ class CrossSignal:
 
             # TODO I change the filled value to 0 from 1, we need to confirm the impact
             self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
-            self.stocks_post_matrix.to_csv('data/stocks_post_matrix.csv')
+            self.stocks_post_matrix.to_csv('data/interim/stocks_post_matrix.csv')
 
     @property
     def trivial_change_matrix(self):
@@ -171,7 +172,7 @@ class CrossSignal:
     @property
     def equal_weight_rank_signal(self):
         daily_post_rank_matrix = self.stocks_post_matrix.rank(1, method='first', ascending=True)
-        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.95).round(0)  # The place to change percentage
+        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.7).round(0)  # The place to change percentage
         daily_post_rank_matrix = daily_post_rank_matrix.gt(rank_max, axis=0)
 
         daily_post_change_rank_matrix = self.ranking_trivial_matrix
@@ -191,7 +192,7 @@ class Backtest:
     posts at day t - 1 will contribute to the return at day t.
     """
     def __init__(self, signal: pd.DataFrame, start='2015-01-01', end='2019-07-31', number_of_skipping_days=60,
-                 ret_type='cmo_ret'):
+                 ret_type='cmc_ret'):
         self._signal = signal.fillna(0)
         self._tickers = signal.columns.values.tolist()
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
@@ -205,6 +206,7 @@ class Backtest:
         self.cash_history = []
         self.equity_value_history = []
         self.total_value_history = []
+        self.individual_history = []
         self.valid_dates = []
         self.lot_size = 100
 
@@ -233,7 +235,7 @@ class Backtest:
                 self.prices_matrix = curr_df
 
         self.prices_matrix.fillna(0, inplace=True)
-
+        self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
         # Choose the preferred ret
         self.prices_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == ret_type]
 
@@ -272,8 +274,10 @@ class Backtest:
             1.  How we trade? For now, I will buy a fixed amount of value
             2.
         """
+        self.prices_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
+        self.tradability_matrix.to_csv('data/interim/tradability.csv')
+        self._signal.to_csv('data/interim/signal_matrix.csv')
         with Bar('Backtesting', max=self.prices_matrix.shape[0]) as bar:
-
             for date in self.prices_matrix.index:
                 bar.next()
                 today_signals = self._signal.loc[date, :]
@@ -299,17 +303,19 @@ class Backtest:
                 # today_position is different from the updated inventory position since we assume
                 # we will get profit from yesturday + today_signals * today_tradability today
                 # but the remaining invection is updated by self.update_inventory(today_signals, today_tradability)
-                today_position = pd.DataFrame([self.yesterday_inventory.values,
-                                                (today_signals * today_tradability).values]).any(axis=0)
+                # today_position = pd.DataFrame([self.yesterday_inventory.values,
+                #                                 (today_signals * today_tradability).values]).any(axis=0)
 
+                """only inventory will be used to compute return"""
+                today_position = self.yesterday_inventory
                 self.update_inventory(today_signals, today_tradability)  # Update inventory
 
                 if not (np.all(today_position == False) or np.all(today_rets == 0)):
                     self.total_value += np.sum(today_rets.values * today_position.values)
                     self.total_value_history.append(self.total_value)
                     self.valid_dates.append(date)
-
-        self.plot()
+                    self.individual_history.append(today_rets.values * today_position.values)
+        self.pye_plot()
 
     def update_inventory(self, today_signals, today_tradability):
         """Only update the inventory when the tradability is True"""
@@ -318,14 +324,51 @@ class Backtest:
                 self.yesterday_inventory[idx] = today_signals[idx]
 
     def plot(self):
-        plt.figure(figsize=(20, 16))
-        csi300 = web.get_data_yahoo('000300.SS', self._start, self._end).Close
-        plt.plot(csi300.index, csi300.values, color='navy', linewidth=2, linestyle='dashed', label="CSI300")
+
+        plot_data = pd.DataFrame(self.individual_history, columns=self.prices_matrix.columns,
+                            index=self.valid_dates)
+        plot_data = pd.concat([plot_data, pd.Series(self.total_value_history, name='Total',
+                                                    index=self.valid_dates)], axis=1)
+        plot_data.to_csv('data/interim/individual_pnl.csv')
+        plot_data.plot()
+        plt.legend()
+        # plt.plot(self.valid_dates, self.total_value_history, color='red', linewidth=2, label="PnL")
         plt.show()
 
-        plt.figure(figsize=(20, 16))
-        plt.plot(self.valid_dates, self.total_value_history, color='red', linewidth=2, label="PnL")
-        plt.show()
+    def pye_plot(self):
+        plot_data = pd.DataFrame(self.individual_history, columns=self.prices_matrix.columns,
+                                 index=self.valid_dates)
+        plot_data = pd.concat([plot_data, pd.Series(self.total_value_history, name='Total',
+                                                    index=self.valid_dates)], axis=1)
+        plot_data = plot_data.round(3)
+        plot_data.to_csv('data/interim/individual_pnl.csv')
+
+        line = Line(init_opts=opts.InitOpts(width="1200px", height="600px"))
+        line.add_xaxis(
+            xaxis_data=[date.strftime('%Y-%m-%d') for date in self.valid_dates])  # input of x-axis has been string format
+        for col in plot_data.columns:
+            line.add_yaxis(y_axis=plot_data.loc[:, col].values.tolist(),
+                           series_name=col.title(),
+                           is_smooth=True,
+                           label_opts=opts.LabelOpts(is_show=False),
+                           linestyle_opts=opts.LineStyleOpts(width=2)
+                           )
+        line.set_global_opts(
+            datazoom_opts=opts.DataZoomOpts(),
+            legend_opts=opts.LegendOpts(pos_top="20%", pos_right='0%', pos_left='90%'),
+            title_opts=opts.TitleOpts(title='Total Returns'.upper(), pos_left='0%'),
+            tooltip_opts=opts.TooltipOpts(trigger="axis", axis_pointer_type="cross", is_show=True),
+            xaxis_opts=opts.AxisOpts(boundary_gap=False, max_interval=5),
+            yaxis_opts=opts.AxisOpts(
+                axislabel_opts=opts.LabelOpts(formatter="{value}"),
+                splitline_opts=opts.SplitLineOpts(is_show=True),
+            )
+        )
+        # line.set_series_opts(
+        #     markpoint_opts=opts.MarkPointOpts(data=[opts.MarkPointItem(type_='max', name='Max'),
+        #                                             opts.MarkPointItem(type_='min', name='Min')]),
+        # )
+        line.render(path='Total Returns.html')
 
 
 def sentiment(texts: str):
