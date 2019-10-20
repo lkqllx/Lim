@@ -14,9 +14,8 @@ import multiprocessing as mp
 from progress.bar import Bar
 import logging
 
-logging.basicConfig(filename='forum.log', filemode='w',
+logging.basicConfig(filename='logs/forum.log', filemode='w',
                     format='%(name)s - %(levelname)s - %(message)s', level=logging.ERROR)
-logging.debug('This will get logged')
 
 chrome_options = Options()
 chrome_options.add_argument("--headless")
