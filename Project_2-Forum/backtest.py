@@ -299,8 +299,6 @@ class Backtest:
         """Here will exclude the IPO prices by replacing the first n available prices into Zero"""
         for col in ret_matrix.columns:
             valid_index = ret_matrix[col].first_valid_index()
-            if col == '603986':
-                a = [valid_index + dt.timedelta(idx) for idx in range(self.number_of_skipping_days)]
             ret_matrix.loc[[valid_index + dt.timedelta(idx)
                             for idx in range(self.number_of_skipping_days)], col] = np.nan
 
@@ -329,7 +327,7 @@ class Backtest:
         self.tradability_matrix.to_csv('data/interim/tradability.csv')
         self._signal.to_csv('data/interim/signal_matrix.csv')
         with Bar('Backtesting', max=self.ret_matrix.shape[0]) as bar:
-            for date in self.ret_matrix.index:
+            for idx, date in enumerate(self.ret_matrix.index):
                 bar.next()
                 today_signals = self._signal.loc[date, :]
                 today_rets = self.ret_matrix.loc[date, :]
@@ -392,7 +390,7 @@ class Backtest:
         plot_data = pd.concat([plot_data, pd.Series(self.total_value_history, name='Total',
                                                     index=self.valid_dates)], axis=1)
         plot_data = plot_data.round(3)
-        plot_data.to_csv('data/interim/individual_pnl.csv')
+        plot_data.to_csv(f'data/interim/individual_pnl_{self._ret_type}.csv')
 
         line = Line(init_opts=opts.InitOpts(width="1200px", height="600px"))
         line.add_xaxis(
@@ -438,7 +436,7 @@ def run_backtest():
     cs = CrossSignal(start=start, end=end)
     # print(cs.equal_weight_rank_signal)
 
-    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type='cmc_ret')
+    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type='cmo_ret')
     bs.simulate()
 
 
