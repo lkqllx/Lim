@@ -396,12 +396,13 @@ class Backtest:
             xaxis_data=[date.strftime('%Y-%m-%d') for date in
                         self.valid_dates])  # input of x-axis has been string format
         for col in plot_data.columns:
-            line.add_yaxis(y_axis=plot_data.loc[:, col].values.tolist(),
-                           series_name=col.title(),
-                           is_smooth=True,
-                           label_opts=opts.LabelOpts(is_show=False),
-                           linestyle_opts=opts.LineStyleOpts(width=2)
-                           )
+            if col == 'Total':
+                line.add_yaxis(y_axis=plot_data.loc[:, col].values.tolist(),
+                               series_name=col.title(),
+                               is_smooth=True,
+                               label_opts=opts.LabelOpts(is_show=False),
+                               linestyle_opts=opts.LineStyleOpts(width=2)
+                               )
         line.set_global_opts(
             datazoom_opts=opts.DataZoomOpts(),
             legend_opts=opts.LegendOpts(pos_top="20%", pos_right='0%', pos_left='90%'),
