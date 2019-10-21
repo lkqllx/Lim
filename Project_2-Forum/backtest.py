@@ -120,6 +120,7 @@ class CrossSignal:
         except:
             files = os.listdir('data/historical/2019-10-15')
             files = [file for file in files if re.match('[\d]+.csv', file)]
+            files = sorted(files, key=lambda x: int(x.split('.')[0]))
             tickers = [file.split('.')[0] for file in files]
             self.stocks_post_matrix = pd.DataFrame(index=self.date_list)
             with Bar('CrossSignal Preprocessing', max=len(files)) as bar:
