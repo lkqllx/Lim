@@ -1,25 +1,41 @@
 import pandas as pd
-import pandas_datareader as web
 from pyecharts.charts import Line, Scatter, Page
 import pyecharts.options as opts
 import os
 import re
+import numpy as np
 
 page = Page()
 
 def plot_lines(pnls):
-    shex = web.get_data_yahoo('000001.SS', start='2015-01-01', end='2019-07-31').Close
-    shex.name = 'SSE Index'
-    pnls = pd.concat([pnls, shex], axis=1).dropna(axis=0)
-    pnls.to_csv('data/interim/total_pnls.csv')
-    pnls.loc[:, 'SSE Index'] =  pnls.loc[:, 'SSE Index'] / 100
-    pnls = pnls.round(2)
+    csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)['Price']
+    csi300 = csi300.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
+    csi300 = (csi300 - csi300.shift(1)) / csi300.shift(1)
+    csi300.name = 'CSI300'
+    pnls = pd.concat([pnls, csi300], axis=1).dropna(axis=0)
+    pnls = pnls.round(4)
+    pnls.to_csv('data/interim/daily_pnls.csv')
+
+    cumulative_pnl = pd.DataFrame(index=pnl.index)
+    for col in pnls.columns:
+        if col != 'CSI300':
+            curr_ret = pnls.loc[:, col]
+            excess_ret = curr_ret - pnls.loc[:, 'CSI300']
+        else:
+            excess_ret = pnls.loc[:, 'CSI300']
+        excess_ret = excess_ret.apply(lambda x: x + 1)
+        excess_ret = excess_ret.cumprod()
+        excess_ret = excess_ret - 1
+        excess_ret.name = col
+        cumulative_pnl = pd.concat([cumulative_pnl, excess_ret], axis=1)
+
+
     line = Line(init_opts=opts.InitOpts(width="1200px", height="600px"))
     line.add_xaxis(
         xaxis_data=[date.strftime('%Y-%m-%d') for date in
                     pnls.index])  # input of x-axis has been string format
-    for col in pnls.columns:
-        line.add_yaxis(y_axis=pnls.loc[:, col].values.tolist(),
+    for col in cumulative_pnl.columns:
+        line.add_yaxis(y_axis=cumulative_pnl.loc[:, col].values.tolist(),
                        series_name=col.capitalize(),
                        is_smooth=True,
                        label_opts=opts.LabelOpts(is_show=False),
@@ -41,13 +57,11 @@ def plot_lines(pnls):
                                                 opts.MarkPointItem(type_='min', name='Min')]),
     )
     page.add(line)
-    # return line
 
 def plot_scatter(pnls):
     scatter = Scatter(init_opts=opts.InitOpts(width="1600px", height="1000px"))
     for ret_type, pnl in pnls:
-        pnl_aggregate = pnl.agg(['mean', 'std'])
-
+        pnl_aggregate = compute_mean_std(pnl)
         scatter.add_xaxis(xaxis_data=pnl_aggregate.loc['mean', :].values.tolist())
         scatter.add_yaxis(
             series_name=f'{ret_type.capitalize()}',
@@ -55,7 +69,6 @@ def plot_scatter(pnls):
             symbol_size=10,
             label_opts=opts.LabelOpts(is_show=False),
         )
-        # scatter.set_series_opts(label_opts=opts.LabelOpts(formatter="{b}, {c}"))
         scatter.set_global_opts(
             xaxis_opts=opts.AxisOpts(
                 name='Mean',
@@ -74,7 +87,24 @@ def plot_scatter(pnls):
         # scatters.append(scatter)
     # return scatters
 
-def 
+def compute_mean_std(pnl):
+    pnl_aggregate = pd.DataFrame(index=['mean', 'std'])
+    for col in pnl.columns:
+        curr_col = pnl.loc[:, col]
+        mean = np.mean(curr_col.iloc[np.nonzero(curr_col.values)])
+        std = np.std(curr_col.iloc[np.nonzero(curr_col.values)])
+        pnl_aggregate = pd.concat([pnl_aggregate, pd.DataFrame([mean, std], columns=[col],
+                                                               index=['mean', 'std'])], axis=1)
+    return pnl_aggregate
+
+def compute_daily_return(pnl, col_name):
+    means = []
+    for row in pnl.index:
+        curr_row = pnl.loc[row, :]
+        mean = np.mean(curr_row.iloc[np.nonzero(curr_row.values)])
+        means.append(mean)
+    return pd.Series(means, index=pnl.index, name=col_name)
+
 
 if __name__ == '__main__':
     files = os.listdir('data/interim')
@@ -83,17 +113,15 @@ if __name__ == '__main__':
 
     for pnl_file in pnl_files:
         pnl = pd.read_csv(f'data/interim/{pnl_file}', index_col=0, parse_dates=True)
+        pnl = pnl.drop('Total', axis=1)
         try:
-            curr_series = pnl.loc[:, 'Total']
-            curr_series.name = re.findall('pnl_([\w_]+).csv', pnl_file)[0]
+            curr_series = compute_daily_return(pnl, re.findall('pnl_([\w_]+).csv', pnl_file)[0])
             all_total = pd.concat([all_total, curr_series], axis=1)
         except:
-            all_total = pnl.loc[:, 'Total']
-            all_total.name = re.findall('pnl_([\w_]+).csv', pnl_file)[0]
-        pnl = pnl.drop('Total', axis=1)
+            all_total = compute_daily_return(pnl, re.findall('pnl_([\w_]+).csv', pnl_file)[0])
         pnls.append((re.findall('pnl_([\w_]+).csv', pnl_file)[0], pnl))
 
-    plot_lines(all_total)
+    plot_lines(all_total.dropna())
     plot_scatter(pnls)
     page.render(path='figs/comparison_plots.html')
     # Page(*[[line] + scatters]).render(path='figs/comparison_plots.html')
