@@ -265,8 +265,9 @@ class Backtest:
             curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')] -
                                                    curr_df.loc[:, (ticker, 'open')].shift(1)) / \
                                                   curr_df.loc[:, (ticker, 'open')].shift(1)
-            curr_df.loc[:, (ticker, 'abs_diff_oc')] = np.abs((curr_df.loc[:, (ticker, 'close')] -
-                                                  curr_df.loc[:, (ticker, 'open')]))
+            curr_df.loc[:, (ticker, 'cmc2_ret')] = (curr_df.loc[:, (ticker, 'close')] -
+                                                   curr_df.loc[:, (ticker, 'close')].shift(2)) / \
+                                                  curr_df.loc[:, (ticker, 'close')].shift(2)
             try:
                 self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
             except:

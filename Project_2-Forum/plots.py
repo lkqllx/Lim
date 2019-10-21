@@ -11,6 +11,7 @@ def plot_lines(pnls):
     shex = web.get_data_yahoo('000001.SS', start='2015-01-01', end='2019-07-31').Close
     shex.name = 'SSE Index'
     pnls = pd.concat([pnls, shex], axis=1).dropna(axis=0)
+    pnls.to_csv('data/interim/total_pnls.csv')
     pnls.loc[:, 'SSE Index'] =  pnls.loc[:, 'SSE Index'] / 100
     pnls = pnls.round(2)
     line = Line(init_opts=opts.InitOpts(width="1200px", height="600px"))
@@ -43,13 +44,13 @@ def plot_lines(pnls):
     # return line
 
 def plot_scatter(pnls):
+    scatter = Scatter(init_opts=opts.InitOpts(width="1600px", height="1000px"))
     for ret_type, pnl in pnls:
         pnl_aggregate = pnl.agg(['mean', 'std'])
 
-        scatter = Scatter(init_opts=opts.InitOpts(width="1600px", height="1000px"))
         scatter.add_xaxis(xaxis_data=pnl_aggregate.loc['mean', :].values.tolist())
         scatter.add_yaxis(
-            series_name='',
+            series_name=f'{ret_type.capitalize()}',
             y_axis=pnl_aggregate.loc['std', :].values.tolist(),
             symbol_size=10,
             label_opts=opts.LabelOpts(is_show=False),
@@ -73,7 +74,7 @@ def plot_scatter(pnls):
         # scatters.append(scatter)
     # return scatters
 
-
+def 
 
 if __name__ == '__main__':
     files = os.listdir('data/interim')
