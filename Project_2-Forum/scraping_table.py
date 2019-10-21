@@ -275,8 +275,6 @@ def run_by_multiprocesses():
     Multiprocess function to speed up the program
     :return: None
     """
-
-    os.chdir('C:/Users/andrew.li/Desktop/Projects/Lim/Project_2-Forum/')
     if not os.path.exists(f'data/historical/{date}'):  # global variable: date
         os.mkdir(f'data/historical/{date}')
 
