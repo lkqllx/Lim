@@ -264,6 +264,8 @@ class Backtest:
             curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')] -
                                                    curr_df.loc[:, (ticker, 'open')].shift(1)) / \
                                                   curr_df.loc[:, (ticker, 'open')].shift(1)
+            curr_df.loc[:, (ticker, 'abs_diff_oc')] = np.abs((curr_df.loc[:, (ticker, 'close')] -
+                                                  curr_df.loc[:, (ticker, 'open')]))
             try:
                 self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
             except:
@@ -272,15 +274,15 @@ class Backtest:
         self.prices_matrix.fillna(0, inplace=True)
         self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
         # Choose the preferred ret
-        self.prices_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == ret_type]
+        self.ret_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == ret_type]
 
         # Critical step to drop level of columns
-        self.prices_matrix.columns = self.prices_matrix.columns.get_level_values(0)
+        self.ret_matrix.columns = self.ret_matrix.columns.get_level_values(0)
 
         # Match the dates list
-        self.prices_matrix = pd.concat([pd.DataFrame(index=self.date_list), self.prices_matrix], axis=1)
-        self.yesterday_inventory = pd.Series(np.repeat(0, self.prices_matrix.shape[1]),
-                                             index=self.prices_matrix.columns)
+        self.ret_matrix = pd.concat([pd.DataFrame(index=self.date_list), self.ret_matrix], axis=1)
+        self.yesterday_inventory = pd.Series(np.repeat(0, self.ret_matrix.shape[1]),
+                                             index=self.ret_matrix.columns)
 
     @property
     def tradability_matrix(self):
@@ -291,17 +293,28 @@ class Backtest:
             3.  Skip holiday, halted dates $DONE$
         :return: tradability_matrix in which values are either 1 or 0
         """
-        prices_matrix = deepcopy(self.prices_matrix)
+        ret_matrix = deepcopy(self.ret_matrix)
 
         """Here will exclude the IPO prices by replacing the first n available prices into Zero"""
-        for col in prices_matrix.columns:
-            valid_index = prices_matrix[col].first_valid_index()
-            prices_matrix.loc[[valid_index + dt.timedelta(idx)
-                               for idx in range(self.number_of_skipping_days)], col] = np.nan
+        for col in ret_matrix.columns:
+            valid_index = ret_matrix[col].first_valid_index()
+            ret_matrix.loc[[valid_index + dt.timedelta(idx)
+                            for idx in range(self.number_of_skipping_days)], col] = np.nan
 
-        return pd.DataFrame(np.where(np.isnan(prices_matrix), 0, 1),
-                            index=prices_matrix.index,
-                            columns=prices_matrix.columns).fillna(0)
+        """Here will deal with the price limit case"""
+        prices_matrix = deepcopy(self.prices_matrix)
+        # Here I used (close - open) / open as the indicator, later we may change to ohlcv with new dataset
+        prices_diff_mat = prices_matrix.iloc[:, prices_matrix.columns.get_level_values(1) == 'cmo_ret']
+        prices_diff_mat.columns = prices_diff_mat.columns.get_level_values(0)
+        prices_diff_mat = prices_diff_mat[ret_matrix.columns]  # Critical step to make sure data in the same order
+        is_prices_limit_mat = pd.DataFrame(np.where(np.abs(prices_diff_mat.values) < 0.002, np.nan, 1),
+                                           index=prices_diff_mat.index, columns=prices_diff_mat.columns)
+        is_prices_limit_mat = pd.concat([pd.DataFrame(index=self.date_list), is_prices_limit_mat], axis=1)
+        after_price_limit_ret_matrix = ret_matrix * is_prices_limit_mat
+
+        return pd.DataFrame(np.where(np.isnan(after_price_limit_ret_matrix), 0, 1),
+                            index=ret_matrix.index,
+                            columns=ret_matrix.columns).fillna(0)
 
     def simulate(self):
         """
@@ -309,14 +322,14 @@ class Backtest:
             1.  How we trade? For now, I will buy a fixed amount of value
             2.
         """
-        self.prices_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
+        self.ret_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
         self.tradability_matrix.to_csv('data/interim/tradability.csv')
         self._signal.to_csv('data/interim/signal_matrix.csv')
-        with Bar('Backtesting', max=self.prices_matrix.shape[0]) as bar:
-            for date in self.prices_matrix.index:
+        with Bar('Backtesting', max=self.ret_matrix.shape[0]) as bar:
+            for date in self.ret_matrix.index:
                 bar.next()
                 today_signals = self._signal.loc[date, :]
-                today_rets = self.prices_matrix.loc[date, :]
+                today_rets = self.ret_matrix.loc[date, :]
                 today_rets = today_rets.fillna(0)
                 today_tradability = self.tradability_matrix.loc[date, :]
 
@@ -345,7 +358,7 @@ class Backtest:
                 today_position = self.yesterday_inventory
                 self.update_inventory(today_signals, today_tradability)  # Update inventory
 
-                if (not np.all(today_position is False)) and (not np.all(today_rets == 0)):
+                if not (np.all(today_position == 0) or np.all(today_rets == 0)):
                     self.total_value += np.sum(today_rets.values * today_position.values)
                     self.total_value_history.append(self.total_value)
                     self.valid_dates.append(date)
@@ -360,18 +373,18 @@ class Backtest:
 
     def plot(self):
 
-        plot_data = pd.DataFrame(self.individual_history, columns=self.prices_matrix.columns,
+        plot_data = pd.DataFrame(self.individual_history, columns=self.ret_matrix.columns,
                                  index=self.valid_dates)
         plot_data = pd.concat([plot_data, pd.Series(self.total_value_history, name='Total',
                                                     index=self.valid_dates)], axis=1)
-        plot_data.to_csv('data/interim/individual_pnl.csv')
+        plot_data.to_csv(f'data/interim/individual_pnl_{self._ret_type}.csv')
         plot_data.plot()
         plt.legend()
         # plt.plot(self.valid_dates, self.total_value_history, color='red', linewidth=2, label="PnL")
         plt.show()
 
     def pye_plot(self):
-        plot_data = pd.DataFrame(self.individual_history, columns=self.prices_matrix.columns,
+        plot_data = pd.DataFrame(self.individual_history, columns=self.ret_matrix.columns,
                                  index=self.valid_dates)
         plot_data = pd.concat([plot_data, pd.Series(self.total_value_history, name='Total',
                                                     index=self.valid_dates)], axis=1)
@@ -421,7 +434,7 @@ def run_backtest():
     cs = CrossSignal(start=start, end=end)
     # print(cs.equal_weight_rank_signal)
 
-    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
+    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type='cmc_ret')
     bs.simulate()
 
 
