@@ -201,7 +201,7 @@ class CrossSignal:
     @property
     def equal_weight_rank_signal(self):
         daily_post_rank_matrix = self.stocks_post_matrix.rank(1, method='first', ascending=True)
-        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.7).round(0)  # The place to change percentage
+        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.95).round(0)  # The place to change percentage
         daily_post_rank_matrix = daily_post_rank_matrix.gt(rank_max, axis=0)
 
         daily_post_change_rank_matrix = self.ranking_trivial_matrix
@@ -271,7 +271,7 @@ class Backtest:
             except:
                 self.prices_matrix = curr_df
 
-        self.prices_matrix.fillna(0, inplace=True)
+        # self.prices_matrix.fillna(0, inplace=True)
         self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
         # Choose the preferred ret
         self.ret_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == ret_type]
@@ -298,6 +298,8 @@ class Backtest:
         """Here will exclude the IPO prices by replacing the first n available prices into Zero"""
         for col in ret_matrix.columns:
             valid_index = ret_matrix[col].first_valid_index()
+            if col == '603986':
+                a = [valid_index + dt.timedelta(idx) for idx in range(self.number_of_skipping_days)]
             ret_matrix.loc[[valid_index + dt.timedelta(idx)
                             for idx in range(self.number_of_skipping_days)], col] = np.nan
 
