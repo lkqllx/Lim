@@ -161,6 +161,7 @@ class CrossSignal:
             self.stocks_post_matrix.to_csv('data/interim/weekend_stocks_post_matrix.csv')
 
     def add_weekend_posts(self):
+        """Deal with weekend cases that the posts should be aggregated into next trading day"""
         prices_matrix = pd.read_csv('data/interim/prices_matrix.csv', index_col=0, parse_dates=True, header=[0, 1])
         prices_matrix = pd.concat([pd.DataFrame(index=self.date_list), prices_matrix], axis=1)
         holiday_vector = prices_matrix.isnull().all(axis=1)
@@ -211,6 +212,22 @@ class CrossSignal:
 
         # At here, True: buy False: No position
         whether_to_buy_matrix = daily_post_rank_matrix | daily_post_change_rank_matrix
+
+        weights = whether_to_buy_matrix.apply(lambda row: row / 1, axis=1)  # return 1 means buy and 0 to sell
+        return weights
+
+    @property
+    def low_rank_equal_weight_signal(self):
+        daily_post_rank_matrix = self.stocks_post_matrix.rank(1, method='first', ascending=True)
+        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.2).round(0)  # The place to change percentage
+        daily_post_rank_matrix = daily_post_rank_matrix.lt(rank_max, axis=0)
+
+        daily_post_change_rank_matrix = self.ranking_trivial_matrix
+        change_rank_max = (daily_post_change_rank_matrix.max(axis=1) * 0.3).round(0)
+        daily_post_change_rank_matrix = daily_post_change_rank_matrix.lt(change_rank_max, axis=0)
+
+        # At here, True: buy False: No position
+        whether_to_buy_matrix = daily_post_rank_matrix & daily_post_change_rank_matrix
 
         weights = whether_to_buy_matrix.apply(lambda row: row / 1, axis=1)  # return 1 means buy and 0 to sell
         return weights
