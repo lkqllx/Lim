@@ -28,15 +28,20 @@ summ<- function (y){
   return(summt)
 }
 
-pnls = read.csv('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/data/interim/total_pnls.csv')
+pnls = read.csv('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/data/interim/daily_pnls.csv')
 # pnls$X <- as.Date(pnls$X)
 
-for (col in range(c(3, 4))) {
-  a <- cbind.data.frame(pnls[,col])
-  rownames(a) <- as.POSIXct(pnls[,1], format ='%Y-%m-%d')
-  curr_stats <- summ(a)
-  print(curr_stats)
+for (col in c(2,3,4,5)) {
+  # a <- cbind(pnls[,col])
+  # rownames(a) <- as.POSIXct(pnls[,1], format ='%Y-%m-%d')
+  curr_stats <- summ(cbind(pnls[,col]))
+  if (col == 2) {
+    all_stats <- curr_stats
+  } else{
+    all_stats <- cbind(all_stats, curr_stats)
+  }
 }
+
 
 
 
