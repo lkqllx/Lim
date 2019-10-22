@@ -152,7 +152,7 @@ class CrossSignal:
                         (curr_stock_posts_vec.index >= self._start) & (curr_stock_posts_vec.index <= self._end)]
                     self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
 
-            # TODO I change the filled value to 0 from 1, we need to confirm the impact
+
             self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
             self.stocks_post_matrix.to_csv('data/interim/stocks_post_matrix.csv')
 
@@ -219,11 +219,12 @@ class CrossSignal:
     @property
     def low_rank_equal_weight_signal(self):
         daily_post_rank_matrix = self.stocks_post_matrix.rank(1, method='first', ascending=True)
-        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.2).round(0)  # The place to change percentage
-        daily_post_rank_matrix = daily_post_rank_matrix.lt(rank_max, axis=0)
+        rolling_daily_post_rank_matrix = daily_post_rank_matrix.rolling(window=20, axis=0).mean()
+        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.3).round(0)  # The place to change percentage
+        daily_post_rank_matrix = rolling_daily_post_rank_matrix.lt(rank_max, axis=0)
 
         daily_post_change_rank_matrix = self.ranking_trivial_matrix
-        change_rank_max = (daily_post_change_rank_matrix.max(axis=1) * 0.3).round(0)
+        change_rank_max = (daily_post_change_rank_matrix.max(axis=1) * 0.9).round(0)
         daily_post_change_rank_matrix = daily_post_change_rank_matrix.lt(change_rank_max, axis=0)
 
         # At here, True: buy False: No position
@@ -285,6 +286,9 @@ class Backtest:
             curr_df.loc[:, (ticker, 'cmc2_ret')] = (curr_df.loc[:, (ticker, 'close')] -
                                                    curr_df.loc[:, (ticker, 'close')].shift(2)) / \
                                                   curr_df.loc[:, (ticker, 'close')].shift(2)
+            curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
+                                                    curr_df.loc[:, (ticker, 'close')].shift(1)) / \
+                                                   curr_df.loc[:, (ticker, 'close')].shift(1)
             try:
                 self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
             except:
@@ -308,7 +312,7 @@ class Backtest:
         """
         This function will do three things
             1.  Skip IPO periods $DONE$
-            2.  Skip the day if the stock increase/decrease by 10%  $TODO$
+            2.  Skip the day if the stock increase/decrease by 10%
             3.  Skip holiday, halted dates $DONE$
         :return: tradability_matrix in which values are either 1 or 0
         """
@@ -323,11 +327,18 @@ class Backtest:
         """Here will deal with the price limit case"""
         prices_matrix = deepcopy(self.prices_matrix)
         # Here I used (close - open) / open as the indicator, later we may change to ohlcv with new dataset
-        prices_diff_mat = prices_matrix.iloc[:, prices_matrix.columns.get_level_values(1) == 'cmo_ret']
-        prices_diff_mat.columns = prices_diff_mat.columns.get_level_values(0)
-        prices_diff_mat = prices_diff_mat[ret_matrix.columns]  # Critical step to make sure data in the same order
-        is_prices_limit_mat = pd.DataFrame(np.where(np.abs(prices_diff_mat.values) < 0.002, np.nan, 1),
-                                           index=prices_diff_mat.index, columns=prices_diff_mat.columns)
+        intraday_diff_mat = prices_matrix.iloc[:, prices_matrix.columns.get_level_values(1) == 'cmo_ret']
+        intraday_diff_mat.columns = intraday_diff_mat.columns.get_level_values(0)
+        intraday_diff_mat = intraday_diff_mat[ret_matrix.columns]  # Critical step to make sure data in the same order
+
+        interday_diff_mat = prices_matrix.iloc[:, prices_matrix.columns.get_level_values(1) == 'ompc_ret']
+        interday_diff_mat.columns = interday_diff_mat.columns.get_level_values(0)
+        interday_diff_mat = interday_diff_mat[ret_matrix.columns]  # Critical step to make sure data in the same order
+        is_prices_limit_array = np.where(np.logical_and(np.abs(intraday_diff_mat) < 0.002,
+                                                        np.abs(interday_diff_mat) > 0.095), np.nan, 1)
+        is_prices_limit_mat = pd.DataFrame(is_prices_limit_array,
+                                           index=intraday_diff_mat.index,
+                                           columns=intraday_diff_mat.columns)
         is_prices_limit_mat = pd.concat([pd.DataFrame(index=self.date_list), is_prices_limit_mat], axis=1)
         after_price_limit_ret_matrix = ret_matrix * is_prices_limit_mat
 
@@ -344,7 +355,7 @@ class Backtest:
         self.ret_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
         self.tradability_matrix.to_csv('data/interim/tradability.csv')
         self._signal.to_csv('data/interim/signal_matrix.csv')
-        with Bar('Backtesting', max=self.ret_matrix.shape[0]) as bar:
+        with Bar(f'Backtesting {self._ret_type.upper()}', max=self.ret_matrix.shape[0]) as bar:
             for idx, date in enumerate(self.ret_matrix.index):
                 bar.next()
                 today_signals = self._signal.loc[date, :]
@@ -452,9 +463,9 @@ def run_backtest():
     start = '2015-01-01'
     end = '2019-07-31'
     cs = CrossSignal(start=start, end=end)
-    # print(cs.equal_weight_rank_signal)
+    print(cs.low_rank_equal_weight_signal)
 
-    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type='cmo_ret')
+    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type='omo_ret')
     bs.simulate()
 
 
