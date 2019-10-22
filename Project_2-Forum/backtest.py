@@ -386,7 +386,10 @@ class Backtest:
 
                 """only inventory will be used to compute return"""
                 today_position = self.yesterday_inventory
-                self.update_inventory(today_signals, today_tradability)  # Update inventory
+                # Update inventory
+                self.update_inventory(today_signals, today_tradability)
+                if self._ret_type == 'cmo_ret':
+                    today_position = self.yesterday_inventory
 
                 if not (np.all(today_position == 0) or np.all(today_rets == 0)):
                     self.total_value += np.sum(today_rets.values * today_position.values)
@@ -463,9 +466,9 @@ def run_backtest():
     start = '2015-01-01'
     end = '2019-07-31'
     cs = CrossSignal(start=start, end=end)
-    print(cs.low_rank_equal_weight_signal)
+    # print(cs.low_rank_equal_weight_signal)
 
-    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type='omo_ret')
+    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type='cmo_ret')
     bs.simulate()
 
 
