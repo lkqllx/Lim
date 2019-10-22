@@ -10,11 +10,21 @@ page = Page()
 def plot_lines(pnls):
     csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)['Price']
     csi300 = csi300.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
-    csi300 = (csi300 - csi300.shift(1)) / csi300.shift(1)
+    csi300 = (csi300 - csi300.shift(-1)) / csi300.shift(-1)
     csi300.name = 'CSI300'
     pnls = pd.concat([pnls, csi300], axis=1).dropna(axis=0)
     pnls = pnls.round(4)
-    pnls.to_csv('data/interim/daily_pnls.csv')
+
+    excess_daily = pd.DataFrame(index=pnl.index)
+    for col in pnls.columns:
+        if col != 'CSI300':
+            curr_ret = pnls.loc[:, col]
+            excess_ret = curr_ret - pnls.loc[:, 'CSI300']
+        else:
+            excess_ret = pnls.loc[:, 'CSI300']
+        excess_ret.name = col
+        excess_daily = pd.concat([excess_daily, excess_ret], axis=1)
+    excess_daily.to_csv('data/interim/daily_pnls.csv')
 
     cumulative_pnl = pd.DataFrame(index=pnl.index)
     for col in pnls.columns:
@@ -26,9 +36,16 @@ def plot_lines(pnls):
         excess_ret = excess_ret.apply(lambda x: x + 1)
         excess_ret = excess_ret.cumprod()
         excess_ret = excess_ret - 1
-        excess_ret.name = col
-        cumulative_pnl = pd.concat([cumulative_pnl, excess_ret], axis=1)
-
+        excess_ret.name = 'excess_' + col
+        if col != 'CSI300':
+            excess_ret.name = 'excess_' + col
+            curr_ret = curr_ret.apply(lambda x: x + 1)
+            curr_ret = curr_ret.cumprod() - 1
+            cumulative_pnl = pd.concat([cumulative_pnl, curr_ret, excess_ret], axis=1)
+        else:
+            excess_ret.name = col
+            cumulative_pnl = pd.concat([cumulative_pnl, excess_ret], axis=1)
+    cumulative_pnl = cumulative_pnl.round(3)
 
     line = Line(init_opts=opts.InitOpts(width="1200px", height="600px"))
     line.add_xaxis(
@@ -36,14 +53,14 @@ def plot_lines(pnls):
                     pnls.index])  # input of x-axis has been string format
     for col in cumulative_pnl.columns:
         line.add_yaxis(y_axis=cumulative_pnl.loc[:, col].values.tolist(),
-                       series_name=col.capitalize(),
+                       series_name=col.upper(),
                        is_smooth=True,
                        label_opts=opts.LabelOpts(is_show=False),
                        linestyle_opts=opts.LineStyleOpts(width=2)
                        )
     line.set_global_opts(
         datazoom_opts=opts.DataZoomOpts(),
-        legend_opts=opts.LegendOpts(pos_top="20%", pos_right='0%', pos_left='90%'),
+        legend_opts=opts.LegendOpts(pos_top="5%", pos_right='70%', pos_left='10%'),
         title_opts=opts.TitleOpts(title='Total Returns Comparison'.upper(), pos_left='0%'),
         tooltip_opts=opts.TooltipOpts(trigger="axis", axis_pointer_type="cross", is_show=True),
         xaxis_opts=opts.AxisOpts(boundary_gap=False, max_interval=5),
@@ -64,7 +81,7 @@ def plot_scatter(pnls):
         pnl_aggregate = compute_mean_std(pnl)
         scatter.add_xaxis(xaxis_data=pnl_aggregate.loc['mean', :].values.tolist())
         scatter.add_yaxis(
-            series_name=f'{ret_type.capitalize()}',
+            series_name=f'{ret_type.upper()}',
             y_axis=pnl_aggregate.loc['std', :].values.tolist(),
             symbol_size=10,
             label_opts=opts.LabelOpts(is_show=False),
