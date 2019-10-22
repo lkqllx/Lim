@@ -7,7 +7,13 @@ import numpy as np
 
 page = Page()
 
+
 def plot_lines(pnls):
+    """
+    Plot the line chart for every ret_type
+    :param pnls: pd.DataFrame that stores the averaged return for every return type
+    :return: None
+    """
     csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)['Price']
     csi300 = csi300.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
     csi300 = (csi300 - csi300.shift(-1)) / csi300.shift(-1)
@@ -15,6 +21,7 @@ def plot_lines(pnls):
     pnls = pd.concat([pnls, csi300], axis=1).dropna(axis=0)
     pnls = pnls.round(4)
 
+    """This is to process the returns for statistics calculation"""
     excess_daily = pd.DataFrame(index=pnl.index)
     for col in pnls.columns:
         if col != 'CSI300':
@@ -26,6 +33,7 @@ def plot_lines(pnls):
         excess_daily = pd.concat([excess_daily, excess_ret], axis=1)
     excess_daily.to_csv('data/interim/daily_pnls.csv')
 
+    """This is to process the returns for drawing the cumulative return plot"""
     cumulative_pnl = pd.DataFrame(index=pnl.index)
     for col in pnls.columns:
         if col != 'CSI300':
@@ -75,7 +83,13 @@ def plot_lines(pnls):
     )
     page.add(line)
 
+
 def plot_scatter(pnls):
+    """
+    This is to plot scatter plot for detecting the outliers
+    :param pnls: list of tuples that contains the (ret_type, pnl: pd.DataFrame)
+    :return: None
+    """
     scatter = Scatter(init_opts=opts.InitOpts(width="1600px", height="1000px"))
     for ret_type, pnl in pnls:
         pnl_aggregate = compute_mean_std(pnl)
@@ -101,10 +115,14 @@ def plot_scatter(pnls):
             tooltip_opts=opts.TooltipOpts(is_show=False),
         )
         page.add(scatter)
-        # scatters.append(scatter)
-    # return scatters
+
 
 def compute_mean_std(pnl):
+    """
+    Compute the nonzero mean and std in column (every stock's mean and std)
+    :param pnl: pnl: pd.DataFrame, every stocks returns under a ret_type
+    :return: pd.DataFrame, mean and std DataFrame for every stock
+    """
     pnl_aggregate = pd.DataFrame(index=['mean', 'std'])
     for col in pnl.columns:
         curr_col = pnl.loc[:, col]
@@ -114,7 +132,14 @@ def compute_mean_std(pnl):
                                                                index=['mean', 'std'])], axis=1)
     return pnl_aggregate
 
+
 def compute_daily_return(pnl, col_name):
+    """
+    Compute the nonzero average daily return in row (every timestamp's mean)
+    :param pnl: pd.DataFrame, every stocks returns under a ret_type
+    :param col_name: ret_type
+    :return: pd.Series, a averaged mean series
+    """
     means = []
     for row in pnl.index:
         curr_row = pnl.loc[row, :]
@@ -141,4 +166,3 @@ if __name__ == '__main__':
     plot_lines(all_total.dropna())
     plot_scatter(pnls)
     page.render(path='figs/comparison_plots.html')
-    # Page(*[[line] + scatters]).render(path='figs/comparison_plots.html')
