@@ -7,6 +7,31 @@ import numpy as np
 
 page = Page()
 
+def create_benchmark():
+    csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)
+    csi300_close = csi300['Price']
+    csi300_close = csi300_close.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
+    csi300_close_ret = (csi300_close.shift(1) - csi300_close) / csi300_close
+    csi300_close_ret.name = 'CSI300_cmc'
+    csi300_close2_ret = (csi300_close.shift(2) - csi300_close) / csi300_close
+    csi300_close2_ret.name = 'CSI300_cmc2'
+    csi300_close3_ret = (csi300_close.shift(3) - csi300_close) / csi300_close
+    csi300_close3_ret.name = 'CSI300_cmc3'
+    csi300_close4_ret = (csi300_close.shift(4) - csi300_close) / csi300_close
+    csi300_close4_ret.name = 'CSI300_cmc4'
+    csi300_close5_ret = (csi300_close.shift(5) - csi300_close) / csi300_close
+    csi300_close5_ret.name = 'CSI300_cmc5'
+    csi300_open = csi300['Open']
+    csi300_open = csi300_open.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
+    csi300_open_ret = (csi300_open.shift(-1) - csi300_open) / csi300_open
+    csi300_open_ret.name = 'CSI300_omo'
+
+    csi300_close_open_ret = (csi300_close - csi300_open) / csi300_open
+    csi300_close_open_ret.name = 'CSI300_cmo'
+    return [csi300_close_ret, csi300_close_open_ret, csi300_close2_ret, csi300_close3_ret,
+            csi300_close4_ret, csi300_close5_ret, csi300_open_ret]
+
+
 
 def plot_lines(pnls):
     """
@@ -14,57 +39,41 @@ def plot_lines(pnls):
     :param pnls: pd.DataFrame that stores the averaged return for every return type
     :return: None
     """
-    csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)
-    csi300_close = csi300['Price']
-    csi300_close = csi300_close.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
-    csi300_close = (csi300_close - csi300_close.shift(-1)) / csi300_close.shift(-1)
-    csi300_close.name = 'CSI300'
 
-    csi300_open = csi300['Open']
-    csi300_open = csi300_open.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
-    csi300_open = (csi300_open - csi300_open.shift(-1)) / csi300_open.shift(-1)
-    csi300_open.name = 'CSI300_OPEN'
+    benchmarks = create_benchmark()
 
-    pnls = pd.concat([pnls, csi300_close, csi300_open], axis=1).dropna(axis=0)
+    pnls = pd.concat([pnls, *benchmarks], axis=1).dropna(axis=0)
     pnls = pnls.round(4)
 
     """This is to process the returns for statistics calculation"""
-    excess_daily = pd.DataFrame(index=pnl.index)
+    excess_daily = pd.DataFrame(index=pnls.index)
     for col in pnls.columns:
-        if col.find('CSI300'):
+        if not re.match('CSI300.+', col):
             curr_ret = pnls.loc[:, col]
-            if col == 'omo_ret':
-                excess_ret = curr_ret - pnls.loc[:, 'CSI300_OPEN']
-            else:
-                excess_ret = curr_ret - pnls.loc[:, 'CSI300']
+            excess_ret = curr_ret - pnls.loc[:, 'CSI300_' + col]
+            excess_ret.name = col
+            excess_daily = pd.concat([excess_daily, excess_ret], axis=1)
         else:
             excess_ret = pnls.loc[:, col]
-        excess_ret.name = col
-        excess_daily = pd.concat([excess_daily, excess_ret], axis=1)
+            excess_daily = pd.concat([excess_daily, excess_ret], axis=1)
     excess_daily.to_csv('data/interim/daily_pnls.csv')
 
+
     """This is to process the returns for drawing the cumulative return plot"""
-    cumulative_pnl = pd.DataFrame(index=pnl.index)
+    cumulative_pnl = pd.DataFrame(index=pnls.index)
     for col in pnls.columns:
-        if (col != 'CSI300') and (col != 'CSI300_OPEN'):
+        if not re.match('CSI300.+', col):
             curr_ret = pnls.loc[:, col]
-            if col == 'omo_ret':
-                excess_ret = curr_ret - pnls.loc[:, 'CSI300_OPEN']
-            else:
-                excess_ret = curr_ret - pnls.loc[:, 'CSI300']
-        else:
-            excess_ret = pnls.loc[:, col]
-        excess_ret = excess_ret.apply(lambda x: x + 1)
-        excess_ret = excess_ret.cumprod()
-        excess_ret = excess_ret - 1
-        if (col != 'CSI300') and (col != 'CSI300_OPEN'):
+            excess_ret = curr_ret - pnls.loc[:, 'CSI300_' + col]
+            excess_ret = excess_ret.apply(lambda x: x + 1)
+            excess_ret = excess_ret.cumprod()
+            excess_ret = excess_ret - 1
             excess_ret.name = 'excess_' + col
+            excess_daily = pd.concat([excess_daily, excess_ret], axis=1)
+
             curr_ret = curr_ret.apply(lambda x: x + 1)
             curr_ret = curr_ret.cumprod() - 1
             cumulative_pnl = pd.concat([cumulative_pnl, curr_ret, excess_ret], axis=1)
-        else:
-            excess_ret.name = col
-            cumulative_pnl = pd.concat([cumulative_pnl, excess_ret], axis=1)
     cumulative_pnl = cumulative_pnl.round(3)
 
     line = Line(init_opts=opts.InitOpts(width="1200px", height="600px"))
@@ -169,10 +178,10 @@ if __name__ == '__main__':
         pnl = pd.read_csv(f'data/interim/{pnl_file}', index_col=0, parse_dates=True)
         pnl = pnl.drop('Total', axis=1)
         try:
-            curr_series = compute_daily_return(pnl, re.findall('pnl_([\w_]+).csv', pnl_file)[0])
+            curr_series = compute_daily_return(pnl, re.findall('.+pnl_([\w]+)_.+', pnl_file)[0])
             all_total = pd.concat([all_total, curr_series], axis=1)
         except:
-            all_total = compute_daily_return(pnl, re.findall('pnl_([\w_]+).csv', pnl_file)[0])
+            all_total = compute_daily_return(pnl, re.findall('.+pnl_([\w]+)_.+', pnl_file)[0])
         pnls.append((re.findall('pnl_([\w_]+).csv', pnl_file)[0], pnl))
 
     plot_lines(all_total.dropna())
