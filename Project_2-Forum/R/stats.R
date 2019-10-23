@@ -41,7 +41,9 @@ for (col in c(2,3,4,5)) {
     all_stats <- cbind(all_stats, curr_stats)
   }
 }
-
+all_stats <- round(all_stats, 3)
+colnames(all_stats) <- c('cmc_ret', 'cmo_ret', 'omo_ret', 'CSI300')
+write.csv(all_stats, '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/stats.csv')
 
 
 
