@@ -50,7 +50,7 @@ from copy import deepcopy
 from pyecharts.charts import Line
 import pyecharts.options as opts
 import matplotlib.pyplot as plt
-
+import sys
 
 class SelfSignal:
     """
@@ -256,6 +256,7 @@ class Backtest:
         self.equity_value_history = []
         self.total_value_history = []
         self.individual_history = []
+        self.inventory_history = []
         self.valid_dates = []
         self.lot_size = 100
         self._ret_type = ret_type
@@ -277,18 +278,31 @@ class Backtest:
             curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] -
                                                    curr_df.loc[:, (ticker, 'open')]) / \
                                                   curr_df.loc[:, (ticker, 'open')]
-            curr_df.loc[:, (ticker, 'cmc_ret')] = (curr_df.loc[:, (ticker, 'close')] -
-                                                   curr_df.loc[:, (ticker, 'close')].shift(1)) / \
-                                                  curr_df.loc[:, (ticker, 'close')].shift(1)
-            curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')] -
-                                                   curr_df.loc[:, (ticker, 'open')].shift(1)) / \
-                                                  curr_df.loc[:, (ticker, 'open')].shift(1)
-            curr_df.loc[:, (ticker, 'cmc2_ret')] = (curr_df.loc[:, (ticker, 'close')] -
-                                                   curr_df.loc[:, (ticker, 'close')].shift(2)) / \
-                                                  curr_df.loc[:, (ticker, 'close')].shift(2)
+            curr_df.loc[:, (ticker, 'cmc_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-1) -
+                                                   curr_df.loc[:, (ticker, 'close')]) / \
+                                                  curr_df.loc[:, (ticker, 'close')]
+            curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')].shift(-1) -
+                                                   curr_df.loc[:, (ticker, 'open')]) / \
+                                                  curr_df.loc[:, (ticker, 'open')]
+            curr_df.loc[:, (ticker, 'cmc2_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-2) -
+                                                   curr_df.loc[:, (ticker, 'close')]) / \
+                                                  curr_df.loc[:, (ticker, 'close')]
+            curr_df.loc[:, (ticker, 'cmc3_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-3) -
+                                                   curr_df.loc[:, (ticker, 'close')]) / \
+                                                  curr_df.loc[:, (ticker, 'close')]
+            curr_df.loc[:, (ticker, 'cmc4_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-4) -
+                                                   curr_df.loc[:, (ticker, 'close')]) / \
+                                                  curr_df.loc[:, (ticker, 'close')]
+            curr_df.loc[:, (ticker, 'cmc5_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-5) -
+                                                   curr_df.loc[:, (ticker, 'close')]) / \
+                                                  curr_df.loc[:, (ticker, 'close')]
+            curr_df.loc[:, (ticker, 'cmc10_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-10) -
+                                                   curr_df.loc[:, (ticker, 'close')]) / \
+                                                  curr_df.loc[:, (ticker, 'close')]
             curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
                                                     curr_df.loc[:, (ticker, 'close')].shift(1)) / \
                                                    curr_df.loc[:, (ticker, 'close')].shift(1)
+
             try:
                 self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
             except:
@@ -306,6 +320,7 @@ class Backtest:
         self.ret_matrix = pd.concat([pd.DataFrame(index=self.date_list), self.ret_matrix], axis=1)
         self.yesterday_inventory = pd.Series(np.repeat(0, self.ret_matrix.shape[1]),
                                              index=self.ret_matrix.columns)
+
 
     @property
     def tradability_matrix(self):
@@ -355,13 +370,14 @@ class Backtest:
         self.ret_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
         self.tradability_matrix.to_csv('data/interim/tradability.csv')
         self._signal.to_csv('data/interim/signal_matrix.csv')
+        tradability_mat = self.tradability_matrix
         with Bar(f'Backtesting {self._ret_type.upper()}', max=self.ret_matrix.shape[0]) as bar:
             for idx, date in enumerate(self.ret_matrix.index):
                 bar.next()
                 today_signals = self._signal.loc[date, :]
                 today_rets = self.ret_matrix.loc[date, :]
                 today_rets = today_rets.fillna(0)
-                today_tradability = self.tradability_matrix.loc[date, :]
+                today_tradability = tradability_mat.loc[date, :]
 
                 """
                 Backtesting
@@ -385,17 +401,19 @@ class Backtest:
                 #                                 (today_signals * today_tradability).values]).any(axis=0)
 
                 """only inventory will be used to compute return"""
-                today_position = self.yesterday_inventory
+                today_position = deepcopy(self.yesterday_inventory)
                 # Update inventory
                 self.update_inventory(today_signals, today_tradability)
+
                 if self._ret_type == 'cmo_ret':
-                    today_position = self.yesterday_inventory
+                    today_position = deepcopy(self.yesterday_inventory)
 
                 if not (np.all(today_position == 0) or np.all(today_rets == 0)):
                     self.total_value += np.sum(today_rets.values * today_position.values)
                     self.total_value_history.append(self.total_value)
                     self.valid_dates.append(date)
                     self.individual_history.append(today_rets.values * today_position.values)
+                    self.inventory_history.append(today_position.values)
         self.pye_plot()
 
     def update_inventory(self, today_signals, today_tradability):
@@ -453,6 +471,15 @@ class Backtest:
         # )
         line.render(path=f'figs/Total Returns ({self._ret_type}).html')
 
+    def cal_turnover(self):
+        inventory_history = pd.DataFrame(self.inventory_history, index=self.valid_dates,
+                                         columns=self.ret_matrix.columns)
+        original_row_count = np.count_nonzero(inventory_history, axis=1)
+        diff_mat = inventory_history.diff()
+        diff_row_count = np.count_nonzero(diff_mat, axis=1)
+        turnover_vec = diff_row_count[1:] / original_row_count[1:]
+        ave_turnover = np.round(np.mean(turnover_vec), 2)
+        print(f'{self._ret_type}s turnover is {ave_turnover}')
 
 def sentiment(texts: str):
     text = SnowNLP(texts)
@@ -468,8 +495,17 @@ def run_backtest():
     cs = CrossSignal(start=start, end=end)
     # print(cs.low_rank_equal_weight_signal)
 
-    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type='cmo_ret')
-    bs.simulate()
+    try:
+        modes = sys.argv[1]
+        if modes == 'all':
+            modes = ['cmc_ret', 'cmc2_ret', 'cmc3_ret', 'cmc4_ret', 'cmc5_ret', 'cmo_ret', 'omo_ret']
+    except IndexError:
+        modes = ['cmo_ret']
+
+    for mode in modes:
+        bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type=mode)
+        bs.simulate()
+        bs.cal_turnover()
 
 
 if __name__ == '__main__':
