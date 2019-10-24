@@ -443,7 +443,7 @@ class Backtest:
         plot_data = pd.concat([plot_data, pd.Series(self.total_value_history, name='Total',
                                                     index=self.valid_dates)], axis=1)
         plot_data = plot_data.round(3)
-        plot_data.to_csv(f'data/interim/individual_pnl_{self._ret_type}.csv')
+        plot_data.to_csv(f'data/interim/individual/individual_pnl_{self._ret_type}.csv')
 
         line = Line(init_opts=opts.InitOpts(width="1200px", height="600px"))
         line.add_xaxis(
@@ -477,8 +477,10 @@ class Backtest:
     def cal_turnover(self):
         inventory_history = pd.DataFrame(self.inventory_history, index=self.valid_dates,
                                          columns=self.ret_matrix.columns)
+        inventory_history.to_csv('data/interim/inventory_history.csv')
         original_row_count = np.count_nonzero(inventory_history, axis=1)
-        diff_mat = inventory_history.diff()
+        delay = re.findall('\w+([\d+]).+', self._ret_type)[0]
+        diff_mat = inventory_history.diff(periods=int(delay))
         diff_row_count = np.count_nonzero(diff_mat, axis=1)
         turnover_vec = diff_row_count[1:] / original_row_count[1:]
         ave_turnover = np.round(np.mean(turnover_vec), 2)
@@ -503,7 +505,7 @@ def run_backtest():
         if modes == 'all':
             modes = [f'cmc{idx}_ret' for idx in range(1, 41)]
     except IndexError:
-        modes = ['cmo_ret']
+        modes = ['cmc10_ret']
 
     bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
 
