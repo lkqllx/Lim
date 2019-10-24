@@ -241,14 +241,13 @@ class Backtest:
     """
 
     def __init__(self, signal: pd.DataFrame, start='2015-01-01', end='2019-07-31', number_of_skipping_days=60,
-                 ret_type='cmc_ret'):
+                 number_of_prices_delay=41):
         self._signal = signal.fillna(0)
         self._tickers = signal.columns.values.tolist()
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
         self._end = dt.datetime.strptime(end, '%Y-%m-%d')
         self.date_list = [self._end - dt.timedelta(idx) for idx in range((self._end - self._start).days + 1)]
         self.number_of_skipping_days = number_of_skipping_days  # To skip the IPO period
-        self.preprocess(ret_type)
         self.cash = 10_000_000
         self.equity_value = 0
         self.total_value = 0
@@ -259,15 +258,20 @@ class Backtest:
         self.inventory_history = []
         self.valid_dates = []
         self.lot_size = 100
-        self._ret_type = ret_type
+        self.number_of_prices_delay = number_of_prices_delay
+        self.preprocess()
 
     @staticmethod
     def number_of_available_data_in_row(df):
         df['available_data_in_row'] = df.count(axis=1)
         return df
 
-    def preprocess(self, ret_type):
+    def preprocess(self):
         """Build a multi-indexed matrix with ticker as level 1, [close, open, ret] as level 2, timestamp as level 3"""
+        # try:
+        #     self.prices_matrix = pd.read_csv('data/interim/prices_matrix.csv', index_col=0, parse_dates=True,
+        #                                      header=[0, 1])
+        # except:
         for ticker in self._tickers:
             ticker = str(ticker)
             curr_df = pd.read_csv(f'data/prices/{ticker}.csv', index_col=0, low_memory=False,
@@ -278,48 +282,26 @@ class Backtest:
             curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] -
                                                    curr_df.loc[:, (ticker, 'open')]) / \
                                                   curr_df.loc[:, (ticker, 'open')]
-            curr_df.loc[:, (ticker, 'cmc_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-1) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
             curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')].shift(-1) -
                                                    curr_df.loc[:, (ticker, 'open')]) / \
                                                   curr_df.loc[:, (ticker, 'open')]
-            curr_df.loc[:, (ticker, 'cmc2_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-2) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
-            curr_df.loc[:, (ticker, 'cmc3_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-3) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
-            curr_df.loc[:, (ticker, 'cmc4_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-4) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
-            curr_df.loc[:, (ticker, 'cmc5_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-5) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
-            curr_df.loc[:, (ticker, 'cmc10_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-10) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
+            for idx in range(1, self.number_of_prices_delay):
+                curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-idx) -
+                                                             curr_df.loc[:, (ticker, 'close')]) / \
+                                                            curr_df.loc[:, (ticker, 'close')]
+
             curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
-                                                    curr_df.loc[:, (ticker, 'close')].shift(1)) / \
-                                                   curr_df.loc[:, (ticker, 'close')].shift(1)
+                                                         curr_df.loc[:, (ticker, 'close')].shift(-1)) / \
+                                                        curr_df.loc[:, (ticker, 'close')].shift(-1)
 
             try:
                 self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
             except:
                 self.prices_matrix = curr_df
 
-        # self.prices_matrix.fillna(0, inplace=True)
+            # self.prices_matrix.fillna(0, inplace=True)
         self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
-        # Choose the preferred ret
-        self.ret_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == ret_type]
 
-        # Critical step to drop level of columns
-        self.ret_matrix.columns = self.ret_matrix.columns.get_level_values(0)
-
-        # Match the dates list
-        self.ret_matrix = pd.concat([pd.DataFrame(index=self.date_list), self.ret_matrix], axis=1)
-        self.yesterday_inventory = pd.Series(np.repeat(0, self.ret_matrix.shape[1]),
-                                             index=self.ret_matrix.columns)
 
 
     @property
@@ -361,12 +343,33 @@ class Backtest:
                             index=ret_matrix.index,
                             columns=ret_matrix.columns).fillna(0)
 
-    def simulate(self):
+    def reset(self):
+        self.total_value = 0
+        self.cash_history = []
+        self.equity_value_history = []
+        self.total_value_history = []
+        self.individual_history = []
+        self.inventory_history = []
+        self.valid_dates = []
+
+    def simulate(self, ret_type):
         """
         Question about backtesting
             1.  How we trade? For now, I will buy a fixed amount of value
             2.
         """
+        self.reset()
+        # Choose the preferred ret
+        self.ret_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == ret_type]
+
+        # Critical step to drop level of columns
+        self.ret_matrix.columns = self.ret_matrix.columns.get_level_values(0)
+
+        # Match the dates list
+        self.ret_matrix = pd.concat([pd.DataFrame(index=self.date_list), self.ret_matrix], axis=1)
+        self.yesterday_inventory = pd.Series(np.repeat(0, self.ret_matrix.shape[1]),
+                                             index=self.ret_matrix.columns)
+        self._ret_type = ret_type
         self.ret_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
         self.tradability_matrix.to_csv('data/interim/tradability.csv')
         self._signal.to_csv('data/interim/signal_matrix.csv')
@@ -428,7 +431,7 @@ class Backtest:
                                  index=self.valid_dates)
         plot_data = pd.concat([plot_data, pd.Series(self.total_value_history, name='Total',
                                                     index=self.valid_dates)], axis=1)
-        plot_data.to_csv(f'data/interim/individual_pnl_{self._ret_type}.csv')
+        plot_data.to_csv(f'data/interim/individual/individual_pnl_{self._ret_type}.csv')
         plot_data.plot()
         plt.legend()
         # plt.plot(self.valid_dates, self.total_value_history, color='red', linewidth=2, label="PnL")
@@ -498,13 +501,14 @@ def run_backtest():
     try:
         modes = sys.argv[1]
         if modes == 'all':
-            modes = ['cmc_ret', 'cmc2_ret', 'cmc3_ret', 'cmc4_ret', 'cmc5_ret', 'cmo_ret', 'omo_ret']
+            modes = [f'cmc{idx}_ret' for idx in range(1, 41)]
     except IndexError:
         modes = ['cmo_ret']
 
+    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
+
     for mode in modes:
-        bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type=mode)
-        bs.simulate()
+        bs.simulate(mode)
         bs.cal_turnover()
 
 
