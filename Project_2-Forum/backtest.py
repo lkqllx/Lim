@@ -241,7 +241,7 @@ class Backtest:
     """
 
     def __init__(self, signal: pd.DataFrame, start='2015-01-01', end='2019-07-31', number_of_skipping_days=60,
-                 ret_type='cmc_ret'):
+                 number_of_prices_delay=41):
         self._signal = signal.fillna(0)
         self._tickers = signal.columns.values.tolist()
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
@@ -259,7 +259,7 @@ class Backtest:
         self.inventory_history = []
         self.valid_dates = []
         self.lot_size = 100
-        self._ret_type = ret_type
+        self.number_of_prices_delay = number_of_prices_delay
 
     @staticmethod
     def number_of_available_data_in_row(df):
@@ -278,30 +278,10 @@ class Backtest:
             curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] -
                                                    curr_df.loc[:, (ticker, 'open')]) / \
                                                   curr_df.loc[:, (ticker, 'open')]
-            curr_df.loc[:, (ticker, 'cmc_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-1) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
-            curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')].shift(-1) -
-                                                   curr_df.loc[:, (ticker, 'open')]) / \
-                                                  curr_df.loc[:, (ticker, 'open')]
-            curr_df.loc[:, (ticker, 'cmc2_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-2) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
-            curr_df.loc[:, (ticker, 'cmc3_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-3) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
-            curr_df.loc[:, (ticker, 'cmc4_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-4) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
-            curr_df.loc[:, (ticker, 'cmc5_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-5) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
-            curr_df.loc[:, (ticker, 'cmc10_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-10) -
-                                                   curr_df.loc[:, (ticker, 'close')]) / \
-                                                  curr_df.loc[:, (ticker, 'close')]
-            curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
-                                                    curr_df.loc[:, (ticker, 'close')].shift(1)) / \
-                                                   curr_df.loc[:, (ticker, 'close')].shift(1)
+            for idx in range(1, self.number_of_prices_delay):
+                curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-1) -
+                                                       curr_df.loc[:, (ticker, 'close')]) / \
+                                                      curr_df.loc[:, (ticker, 'close')]
 
             try:
                 self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
@@ -361,12 +341,23 @@ class Backtest:
                             index=ret_matrix.index,
                             columns=ret_matrix.columns).fillna(0)
 
-    def simulate(self):
+    def reset(self):
+        self.total_value = 0
+        self.cash_history = []
+        self.equity_value_history = []
+        self.total_value_history = []
+        self.individual_history = []
+        self.inventory_history = []
+        self.valid_dates = []
+
+    def simulate(self, ret_type):
         """
         Question about backtesting
             1.  How we trade? For now, I will buy a fixed amount of value
             2.
         """
+        self.reset()
+        self._ret_type = ret_type
         self.ret_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
         self.tradability_matrix.to_csv('data/interim/tradability.csv')
         self._signal.to_csv('data/interim/signal_matrix.csv')
@@ -498,13 +489,13 @@ def run_backtest():
     try:
         modes = sys.argv[1]
         if modes == 'all':
-            modes = ['cmc_ret', 'cmc2_ret', 'cmc3_ret', 'cmc4_ret', 'cmc5_ret', 'cmo_ret', 'omo_ret']
+            modes = [f'cmc{idx}_ret' for idx in range(1, 41)]
     except IndexError:
         modes = ['cmo_ret']
 
+    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
     for mode in modes:
-        bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end, ret_type=mode)
-        bs.simulate()
+        bs.simulate(mode)
         bs.cal_turnover()
 
 
