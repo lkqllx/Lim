@@ -268,39 +268,39 @@ class Backtest:
 
     def preprocess(self):
         """Build a multi-indexed matrix with ticker as level 1, [close, open, ret] as level 2, timestamp as level 3"""
-        # try:
-        #     self.prices_matrix = pd.read_csv('data/interim/prices_matrix.csv', index_col=0, parse_dates=True,
-        #                                      header=[0, 1])
-        # except:
-        for ticker in self._tickers:
-            ticker = str(ticker)
-            curr_df = pd.read_csv(f'data/prices/{ticker}.csv', index_col=0, low_memory=False,
-                                  names=pd.MultiIndex.from_product([[ticker], ['open', 'close']]))[1:]
-            curr_df.index = pd.to_datetime(curr_df.index)
-            curr_df = curr_df[(curr_df.index >= self._start) & (curr_df.index <= self._end)]
-            curr_df = curr_df.astype(float)
-            curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] -
-                                                   curr_df.loc[:, (ticker, 'open')]) / \
-                                                  curr_df.loc[:, (ticker, 'open')]
-            curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')].shift(-1) -
-                                                   curr_df.loc[:, (ticker, 'open')]) / \
-                                                  curr_df.loc[:, (ticker, 'open')]
-            for idx in range(1, self.number_of_prices_delay):
-                curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-idx) -
-                                                             curr_df.loc[:, (ticker, 'close')]) / \
-                                                            curr_df.loc[:, (ticker, 'close')]
+        try:
+            self.prices_matrix = pd.read_csv('data/interim/prices_matrix.csv', index_col=0, parse_dates=True,
+                                             header=[0, 1])
+        except:
+            for ticker in self._tickers:
+                ticker = str(ticker)
+                curr_df = pd.read_csv(f'data/prices/{ticker}.csv', index_col=0, low_memory=False,
+                                      names=pd.MultiIndex.from_product([[ticker], ['open', 'close']]))[1:]
+                curr_df.index = pd.to_datetime(curr_df.index)
+                curr_df = curr_df[(curr_df.index >= self._start) & (curr_df.index <= self._end)]
+                curr_df = curr_df.astype(float)
+                curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] -
+                                                       curr_df.loc[:, (ticker, 'open')]) / \
+                                                      curr_df.loc[:, (ticker, 'open')]
+                curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')].shift(-1) -
+                                                       curr_df.loc[:, (ticker, 'open')]) / \
+                                                      curr_df.loc[:, (ticker, 'open')]
+                for idx in range(1, self.number_of_prices_delay):
+                    curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-idx) -
+                                                                 curr_df.loc[:, (ticker, 'close')]) / \
+                                                                curr_df.loc[:, (ticker, 'close')]
 
-            curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
-                                                         curr_df.loc[:, (ticker, 'close')].shift(-1)) / \
-                                                        curr_df.loc[:, (ticker, 'close')].shift(-1)
+                curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
+                                                             curr_df.loc[:, (ticker, 'close')].shift(-1)) / \
+                                                            curr_df.loc[:, (ticker, 'close')].shift(-1)
 
-            try:
-                self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
-            except:
-                self.prices_matrix = curr_df
+                try:
+                    self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
+                except:
+                    self.prices_matrix = curr_df
 
-            # self.prices_matrix.fillna(0, inplace=True)
-        self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
+                # self.prices_matrix.fillna(0, inplace=True)
+            self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
 
 
 
