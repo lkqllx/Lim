@@ -243,7 +243,7 @@ class Backtest:
     """
 
     def __init__(self, signal: pd.DataFrame, start='2015-01-01', end='2019-07-31', number_of_skipping_days=60,
-                 number_of_prices_delay=41):
+                 number_of_prices_delay=5):
         self._signal = signal.fillna(0)
         self._tickers = signal.columns.values.tolist()
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
@@ -262,6 +262,8 @@ class Backtest:
         self.inventory_history = []
         self.valid_dates = []
         self.inventory_dates = []
+        self.different_start_daily_returns = []
+        self.different_start_daily_returns_transac = []
         self.lot_size = 100
         self.number_of_prices_delay = number_of_prices_delay
         self.preprocess()
@@ -273,6 +275,11 @@ class Backtest:
 
     def preprocess(self):
         """Build a multi-indexed matrix with ticker as level 1, [close, open, ret] as level 2, timestamp as level 3"""
+        csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)
+        csi300_close = csi300['Price']
+        csi300_close = csi300_close.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
+        self.csi300_close_ret = (csi300_close.shift(1) - csi300_close) / csi300_close
+        self.csi300_close_ret.name = f'CSI300_cmc1'
         try:
             self.prices_matrix = pd.read_csv('data/interim/prices_matrix.csv', index_col=0, parse_dates=True,
                                              header=[0, 1])
@@ -287,13 +294,13 @@ class Backtest:
                 curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] -
                                                        curr_df.loc[:, (ticker, 'open')]) / \
                                                       curr_df.loc[:, (ticker, 'open')]
-                curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')].shift(-1) -
-                                                       curr_df.loc[:, (ticker, 'open')]) / \
-                                                      curr_df.loc[:, (ticker, 'open')]
+                curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')] -
+                                                       curr_df.loc[:, (ticker, 'open')].shift(1)) / \
+                                                      curr_df.loc[:, (ticker, 'open')].shift(1)
                 for idx in range(1, self.number_of_prices_delay):
-                    curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-idx) -
-                                                                 curr_df.loc[:, (ticker, 'close')]) / \
-                                                                curr_df.loc[:, (ticker, 'close')]
+                    curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')] -
+                                                                 curr_df.loc[:, (ticker, 'close')].shift(idx)) / \
+                                                                curr_df.loc[:, (ticker, 'close')].shift(idx)
 
                 curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
                                                              curr_df.loc[:, (ticker, 'close')].shift(-1)) / \
@@ -386,13 +393,14 @@ class Backtest:
         tradability_mat = self.tradability_matrix
         tradability_mat.to_csv('data/interim/tradability.csv')
         first_time_flag = True
-        with Bar(f'Backtesting {self._ret_type.upper()}', max=self.ret_matrix.shape[0]) as bar:
+        with Bar(f'Backtesting {self._ret_type.upper()} - {start_date}', max=self.ret_matrix.shape[0]) as bar:
             for idx, date in enumerate(self.ret_matrix.index):
                 bar.next()
                 today_signals = self._signal.loc[date, :]
                 today_rets = self.ret_matrix.loc[date, :]
                 today_rets = today_rets.fillna(0)
                 today_tradability = tradability_mat.loc[date, :]
+
 
                 if np.all(today_tradability == 0):
                     continue
@@ -408,9 +416,10 @@ class Backtest:
                     trading_date_count += 1
 
                 cost = 0
+                today_benchmark = self.csi300_close_ret.loc[date]
                 # Update inventory
                 if not first_time_flag:
-                    if (trading_date_count + start_date) % interval == 0:
+                    if (trading_date_count - start_date) % interval == 0:
                         self.update_inventory(today_signals, today_tradability)
                         cost = self.cal_daily_transaction_cost(self.yesterday_inventory, today_position)
 
@@ -420,14 +429,21 @@ class Backtest:
                     averaged_ret = total_ret[total_ret != 0].mean()
                 else:
                     averaged_ret = 0
-                # self.total_value *= self.total_value * (1 + averaged_ret)
-                self.total_value_history.append(averaged_ret)
+                today_true_Return = averaged_ret if np.sum(today_position) != 0 else averaged_ret
+                self.total_value_history.append(today_true_Return)
                 # self.total_value_tranc += averaged_ret - cost
-                self.total_value_tranc_history.append(averaged_ret - cost)
+                self.total_value_tranc_history.append(today_true_Return - cost)
                 self.valid_dates.append(date)
                 self.individual_history.append(today_rets.values * today_position.values)
                 self.inventory_history.append(today_position.values)
 
+            self.different_start_daily_returns.append(pd.Series(np.array(self.total_value_history).T,
+                                                                name=f'offset {start_date}',
+                                                                index=self.valid_dates))
+
+            self.different_start_daily_returns_transac.append(pd.Series(np.array(self.total_value_tranc_history).T,
+                                                                        name=f'offset {start_date}',
+                                                                        index=self.valid_dates))
             pd.DataFrame(np.array([self.total_value_history, self.total_value_tranc_history]).T, index=self.valid_dates,
                          columns=['averaged daily return', 'averaged daily return after transaction cost']).\
                 to_csv(f'data/interim/ave_returns/{self._ret_type}_{start_date}.csv')
@@ -558,8 +574,14 @@ def run_backtest():
     bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
     for mode in modes:
         interval = int(re.findall('cmc([0-9]+).+', mode)[0])
-        # for start in range(interval):
-        bs.simulate_one_portfolio(start_date=0, interval=interval)
+        for start in range(interval):
+            bs.simulate_one_portfolio(start_date=start, interval=interval)
+        pd.concat(bs.different_start_daily_returns, axis=1)\
+            .to_csv(f'data/interim/aggregate_protfolios/{mode}_all.csv')
+        pd.concat(bs.different_start_daily_returns_transac, axis=1)\
+            .to_csv(f'data/interim/aggregate_protfolios/'f'{mode}_all_transac.csv')
+        bs.different_start_daily_returns = []
+        bs.different_start_daily_returns_transac = []
         # bs.cal_turnover()
 
 

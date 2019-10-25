@@ -9,29 +9,31 @@ from progress.bar import Bar
 
 page = Page()
 
+def plot_aggregate_excess_return():
+    files = os.listdir('data/interim/aggregate_protfolios/')
+    pnl_files = [file for file in files if re.match('[\w_.]+transac.csv', file)]
+    pnl_files = sorted(pnl_files, key=lambda x: int(re.findall('cmc(\d+)_.+', x)[0]))
+    for pnl_file in pnl_files:
+        pnl = pd.read_csv('data/interim/aggregate_protfolios/' + pnl_file, index_col=0, parse_dates=True).dropna()
+        pnl_mean = pnl.mean(axis=1)
+        interval = re.findall('cmc(\d+)_.+', pnl_file)[0]
+        pnl_mean.name = f'interval {interval}'
+        try:
+            all_mean = pd.concat([all_mean, pnl_mean], axis=1)
+        except:
+            all_mean = pnl_mean
 
-def create_benchmark():
-    csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)
-    csi300_close = csi300['Price']
-    csi300_close = csi300_close.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
+    cumulative_pnl = pd.DataFrame(index=all_mean.index)
+    for col in all_mean.columns:
+        curr_ret = all_mean.loc[:, col]
+        curr_ret = curr_ret.apply(lambda x: x + 1)
+        curr_ret = curr_ret.cumprod() - 1
+        cumulative_pnl = pd.concat([cumulative_pnl, curr_ret], axis=1)
+    cumulative_pnl = cumulative_pnl.round(3)
+    draw_line_plot(cumulative_pnl)
 
-    close_rets = []
-    for idx in range(1, 41):
-        csi300_close_ret = (csi300_close.shift(idx) - csi300_close) / csi300_close
-        csi300_close_ret.name = f'CSI300_cmc{idx}'
-        close_rets.append(csi300_close_ret)
-
-    csi300_open = csi300['Open']
-    csi300_open = csi300_open.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
-    csi300_open_ret = (csi300_open.shift(-1) - csi300_open) / csi300_open
-    csi300_open_ret.name = 'CSI300_omo'
-
-    csi300_close_open_ret = (csi300_close - csi300_open) / csi300_open
-    csi300_close_open_ret.name = 'CSI300_cmo'
-    return close_rets
-
-
-def plot_lines():
+# TODO -> Have not dealt with the ave_returns case after creating a lot of offets
+def plot_lines(offest):
     """
     Plot the line chart for every ret_type
     :param pnls: pd.DataFrame that stores the averaged return for every return type
@@ -41,13 +43,13 @@ def plot_lines():
     csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)
     csi300_close = csi300['Price']
     csi300_close = csi300_close.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
-    csi300_close_ret = (csi300_close.shift(1) - csi300_close) / csi300_close
-    csi300_close_ret.name = f'CSI300_cmc{1}'
+    csi300_close_ret = (csi300_close - csi300_close.shift(-1)) / csi300_close.shift(-1)
+    csi300_close_ret.name = f'CSI300_cmc1'
 
 
     files = os.listdir('data/interim/ave_returns/')
-    pnl_files = [file for file in files if re.match('cmc[\w_.]+', file)]
-    pnl_files = sorted(pnl_files, key=lambda x: int(re.findall('cmc(\d+)_.+', x)[0]))
+    pnl_files = [file for file in files if re.match(f'cmc[\w_.]+ret_{offest}.csv', file)]
+    pnl_files = sorted(pnl_files, key=lambda x: int(re.findall(f'cmc(\d+)_.+{offest}.csv', x)[0]))
     for idx, pnl_file in enumerate(pnl_files):
         pnl = pd.read_csv(f'data/interim/ave_returns/{pnl_file}', index_col=0, parse_dates=True)
         interval = re.findall('cmc(\d+)_.+', pnl_file)[0]
@@ -61,8 +63,8 @@ def plot_lines():
     pnls = pd.concat([pnls, csi300_close_ret], axis=1).dropna(axis=0)
     pnls.to_csv('data/interim/daily_pnls.csv')
 
-    excess_pnls = pnls.sub(pnls['CSI300_cmc1'], axis=0)
-    excess_pnls = excess_pnls.drop('CSI300_cmc1', axis=1)
+    # excess_pnls = pnls.sub(pnls['CSI300_cmc1'], axis=0)
+    excess_pnls = pnls.drop('CSI300_cmc1', axis=1)
     excess_pnls = excess_pnls.round(4)
     excess_pnls.to_csv('data/interim/excess_daily_pnls.csv')
 
@@ -75,11 +77,13 @@ def plot_lines():
             curr_ret = curr_ret.cumprod() - 1
             cumulative_pnl = pd.concat([cumulative_pnl, curr_ret], axis=1)
     cumulative_pnl = cumulative_pnl.round(3)
+    draw_line_plot(cumulative_pnl)
 
+def draw_line_plot(cumulative_pnl):
     line = Line(init_opts=opts.InitOpts(width="1200px", height="600px"))
     line.add_xaxis(
         xaxis_data=[date.strftime('%Y-%m-%d') for date in
-                    pnls.index])  # input of x-axis has been string format
+                    cumulative_pnl.index])  # input of x-axis has been string format
     for col in cumulative_pnl.columns:
         line.add_yaxis(y_axis=cumulative_pnl.loc[:, col].values.tolist(),
                        series_name=col.upper(),
@@ -104,20 +108,19 @@ def plot_lines():
     )
     page.add(line)
 
-
-def plot_scatter():
+def plot_scatter(offset):
     """
     This is to plot scatter plot for detecting the outliers
     :param pnls: list of tuples that contains the (ret_type, pnl: pd.DataFrame)
     :return: None
     """
     files = os.listdir('data/interim/one_portfolio_individual/')
-    pnl_files = [file for file in files if re.match('individual[\w_.]+', file)]
+    pnl_files = [file for file in files if re.match(f'individual[\w_.]+ret_{offset}', file)]
     pnl_files = sorted(pnl_files, key=lambda x: int(re.findall('.+cmc(\d+)_.+', x)[0]))
 
     scatter = Scatter(init_opts=opts.InitOpts(width="1600px", height="1000px"))
     for pnl_file in pnl_files:
-        interval = re.findall('cmc(\d+)_.+', pnl_file)[0]
+        interval = re.findall(f'individual[\w_.]+ret_{offset}', pnl_file)[0]
         pnl = pd.read_csv(f'data/interim/one_portfolio_individual/{pnl_file}', index_col=0)
         pnl_aggregate = compute_mean_std(pnl)
         scatter.add_xaxis(xaxis_data=pnl_aggregate.loc['mean', :].values.tolist())
@@ -160,6 +163,8 @@ def compute_mean_std(pnl):
 
 
 if __name__ == '__main__':
-    plot_lines()
-    plot_scatter()
+    offset = 0
+    plot_lines(offset)
+    plot_scatter(offset)
+    # plot_aggregate_excess_return()
     page.render(path='figs/one_portfolio_plots.html')
