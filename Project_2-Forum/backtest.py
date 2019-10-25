@@ -553,7 +553,7 @@ def run_backtest():
         if modes == 'all':
             modes = [f'cmc{idx}_ret' for idx in [3, 5, 10, 15, 20, 30]]
     except IndexError:
-        modes = ['cmc40_ret']
+        modes = ['cmc1_ret']
 
     bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
     for mode in modes:

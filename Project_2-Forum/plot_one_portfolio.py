@@ -66,12 +66,11 @@ def plot_lines():
     excess_pnls = excess_pnls.round(4)
     excess_pnls.to_csv('data/interim/excess_daily_pnls.csv')
 
-
     """This is to process the returns for drawing the cumulative return plot"""
     cumulative_pnl = pd.DataFrame(index=excess_pnls.index)
     for col in excess_pnls.columns:
         if not re.match('CSI300.+', col):
-            curr_ret = pnls.loc[:, col]
+            curr_ret = excess_pnls.loc[:, col]
             curr_ret = curr_ret.apply(lambda x: x + 1)
             curr_ret = curr_ret.cumprod() - 1
             cumulative_pnl = pd.concat([cumulative_pnl, curr_ret], axis=1)
