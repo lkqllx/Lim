@@ -51,6 +51,8 @@ from pyecharts.charts import Line
 import pyecharts.options as opts
 import matplotlib.pyplot as plt
 import sys
+import logging
+
 
 class SelfSignal:
     """
@@ -250,13 +252,16 @@ class Backtest:
         self.number_of_skipping_days = number_of_skipping_days  # To skip the IPO period
         self.cash = 10_000_000
         self.equity_value = 0
-        self.total_value = 0
+        self.total_value = 1
+        self.total_value_tranc = 1
         self.cash_history = []
         self.equity_value_history = []
         self.total_value_history = []
+        self.total_value_tranc_history = []
         self.individual_history = []
         self.inventory_history = []
         self.valid_dates = []
+        self.inventory_dates = []
         self.lot_size = 100
         self.number_of_prices_delay = number_of_prices_delay
         self.preprocess()
@@ -302,6 +307,17 @@ class Backtest:
                 # self.prices_matrix.fillna(0, inplace=True)
             self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
 
+        # Choose the preferred ret
+        self.ret_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == 'cmc1_ret']
+        self.close_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == 'close']
+
+        # Critical step to drop level of columns
+        self.ret_matrix.columns = self.ret_matrix.columns.get_level_values(0)
+        self.close_matrix.columns = self.close_matrix.columns.get_level_values(0)
+
+        # Match the dates list
+        self.ret_matrix = pd.concat([pd.DataFrame(index=self.date_list), self.ret_matrix], axis=1)
+        self.close_matrix = pd.concat([pd.DataFrame(index=self.date_list), self.close_matrix], axis=1)
 
 
     @property
@@ -344,20 +360,90 @@ class Backtest:
                             columns=ret_matrix.columns).fillna(0)
 
     def reset(self):
-        self.total_value = 0
+        self.total_value = 1
+        self.total_value_tranc = 1
         self.cash_history = []
         self.equity_value_history = []
         self.total_value_history = []
+        self.total_value_tranc_history = []
         self.individual_history = []
         self.inventory_history = []
         self.valid_dates = []
+        self.inventory_dates = []
+        self.yesterday_inventory = pd.Series(np.repeat(0, self.ret_matrix.shape[1]),
+                                             index=self.ret_matrix.columns)
+
+    def init_backtest(self, interval):
+        self.reset()
+        self._ret_type = f'cmc{interval}_ret'
+
+        self.ret_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
+        self._signal.to_csv('data/interim/signal_matrix.csv')
+
+    def simulate_one_portfolio(self, start_date=0, interval=10):
+        """Becktesting function for holding one portfolio at a time"""
+        self.init_backtest(interval=interval)
+        tradability_mat = self.tradability_matrix
+        tradability_mat.to_csv('data/interim/tradability.csv')
+        first_time_flag = True
+        with Bar(f'Backtesting {self._ret_type.upper()}', max=self.ret_matrix.shape[0]) as bar:
+            for idx, date in enumerate(self.ret_matrix.index):
+                bar.next()
+                today_signals = self._signal.loc[date, :]
+                today_rets = self.ret_matrix.loc[date, :]
+                today_rets = today_rets.fillna(0)
+                today_tradability = tradability_mat.loc[date, :]
+
+                if np.all(today_tradability == 0):
+                    continue
+
+                """only inventory will be used to compute return"""
+                today_position = deepcopy(self.yesterday_inventory)
+
+                """Handle the start position"""
+                if first_time_flag:
+                    trading_date_count = 0
+                    first_time_flag = False
+                else:
+                    trading_date_count += 1
+
+                cost = 0
+                # Update inventory
+                if not first_time_flag:
+                    if (trading_date_count + start_date) % interval == 0:
+                        self.update_inventory(today_signals, today_tradability)
+                        cost = self.cal_daily_transaction_cost(self.yesterday_inventory, today_position)
+
+                total_ret = (today_rets * today_position)
+                total_ret = total_ret.dropna()
+                if total_ret.sum() != 0:
+                    averaged_ret = total_ret[total_ret != 0].mean()
+                else:
+                    averaged_ret = 0
+                # self.total_value *= self.total_value * (1 + averaged_ret)
+                self.total_value_history.append(averaged_ret)
+                # self.total_value_tranc += averaged_ret - cost
+                self.total_value_tranc_history.append(averaged_ret - cost)
+                self.valid_dates.append(date)
+                self.individual_history.append(today_rets.values * today_position.values)
+                self.inventory_history.append(today_position.values)
+
+            pd.DataFrame(np.array([self.total_value_history, self.total_value_tranc_history]).T, index=self.valid_dates,
+                         columns=['averaged daily return', 'averaged daily return after transaction cost']).\
+                to_csv(f'data/interim/ave_returns/{self._ret_type}.csv')
+            self.save(save_to=f'data/interim/one_portfolio_individual/individual_pnl_{self._ret_type}.csv')
+
+    @staticmethod
+    def cal_daily_transaction_cost(next_pos, today_pos):
+        sum_pos = np.sum(today_pos)
+        if sum_pos != 0:
+            turnover = np.sum(np.abs(next_pos - today_pos))/np.sum(today_pos)
+        else:
+            turnover = 1
+        return 0.001 * turnover
 
     def simulate(self, ret_type):
-        """
-        Question about backtesting
-            1.  How we trade? For now, I will buy a fixed amount of value
-            2.
-        """
+
         self.reset()
         # Choose the preferred ret
         self.ret_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == ret_type]
@@ -417,7 +503,7 @@ class Backtest:
                     self.valid_dates.append(date)
                     self.individual_history.append(today_rets.values * today_position.values)
                     self.inventory_history.append(today_position.values)
-        self.pye_plot()
+        self.save(save_to=f'data/interim/ndividual/individual_pnl_{self._ret_type}.csv')
 
     def update_inventory(self, today_signals, today_tradability):
         """Only update the inventory when the tradability is True"""
@@ -425,66 +511,28 @@ class Backtest:
             if today_tradability[idx]:
                 self.yesterday_inventory[idx] = today_signals[idx]
 
-    def plot(self):
-
-        plot_data = pd.DataFrame(self.individual_history, columns=self.ret_matrix.columns,
-                                 index=self.valid_dates)
-        plot_data = pd.concat([plot_data, pd.Series(self.total_value_history, name='Total',
-                                                    index=self.valid_dates)], axis=1)
-        plot_data.to_csv(f'data/interim/individual/individual_pnl_{self._ret_type}.csv')
-        plot_data.plot()
-        plt.legend()
-        # plt.plot(self.valid_dates, self.total_value_history, color='red', linewidth=2, label="PnL")
-        plt.show()
-
-    def pye_plot(self):
+    def save(self, save_to):
         plot_data = pd.DataFrame(self.individual_history, columns=self.ret_matrix.columns,
                                  index=self.valid_dates)
         plot_data = pd.concat([plot_data, pd.Series(self.total_value_history, name='Total',
                                                     index=self.valid_dates)], axis=1)
         plot_data = plot_data.round(3)
-        plot_data.to_csv(f'data/interim/individual/individual_pnl_{self._ret_type}.csv')
+        plot_data.to_csv(save_to)
 
-        line = Line(init_opts=opts.InitOpts(width="1200px", height="600px"))
-        line.add_xaxis(
-            xaxis_data=[date.strftime('%Y-%m-%d') for date in
-                        self.valid_dates])  # input of x-axis has been string format
-        for col in plot_data.columns:
-            if col == 'Total':
-                line.add_yaxis(y_axis=plot_data.loc[:, col].values.tolist(),
-                               series_name=col.title(),
-                               is_smooth=True,
-                               label_opts=opts.LabelOpts(is_show=False),
-                               linestyle_opts=opts.LineStyleOpts(width=2)
-                               )
-        line.set_global_opts(
-            datazoom_opts=opts.DataZoomOpts(),
-            legend_opts=opts.LegendOpts(pos_top="20%", pos_right='0%', pos_left='90%'),
-            title_opts=opts.TitleOpts(title='Total Returns'.upper(), pos_left='0%'),
-            tooltip_opts=opts.TooltipOpts(trigger="axis", axis_pointer_type="cross", is_show=True),
-            xaxis_opts=opts.AxisOpts(boundary_gap=False, max_interval=5),
-            yaxis_opts=opts.AxisOpts(
-                axislabel_opts=opts.LabelOpts(formatter="{value}"),
-                splitline_opts=opts.SplitLineOpts(is_show=True),
-            )
-        )
-        # line.set_series_opts(
-        #     markpoint_opts=opts.MarkPointOpts(data=[opts.MarkPointItem(type_='max', name='Max'),
-        #                                             opts.MarkPointItem(type_='min', name='Min')]),
-        # )
-        line.render(path=f'figs/Total Returns ({self._ret_type}).html')
+        pd.DataFrame(self.inventory_history, index=self.valid_dates,
+                     columns=self.ret_matrix.columns).to_csv('data/interim/inventory_history.csv')
 
     def cal_turnover(self):
         inventory_history = pd.DataFrame(self.inventory_history, index=self.valid_dates,
                                          columns=self.ret_matrix.columns)
-        inventory_history.to_csv('data/interim/inventory_history.csv')
         original_row_count = np.count_nonzero(inventory_history, axis=1)
-        delay = re.findall('\w+([\d+]).+', self._ret_type)[0]
+        delay = re.findall('\w+([\d]+).+', self._ret_type)[0]
         diff_mat = inventory_history.diff(periods=int(delay))
         diff_row_count = np.count_nonzero(diff_mat, axis=1)
         turnover_vec = diff_row_count[1:] / original_row_count[1:]
         ave_turnover = np.round(np.mean(turnover_vec), 2)
         print(f'{self._ret_type}s turnover is {ave_turnover}')
+
 
 def sentiment(texts: str):
     text = SnowNLP(texts)
@@ -503,15 +551,16 @@ def run_backtest():
     try:
         modes = sys.argv[1]
         if modes == 'all':
-            modes = [f'cmc{idx}_ret' for idx in range(1, 41)]
+            modes = [f'cmc{idx}_ret' for idx in [3, 5, 10, 15, 20, 30]]
     except IndexError:
-        modes = ['cmc10_ret']
+        modes = ['cmc40_ret']
 
     bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
-
     for mode in modes:
-        bs.simulate(mode)
-        bs.cal_turnover()
+        interval = int(re.findall('cmc([0-9]+).+', mode)[0])
+        for start in range(interval):
+            bs.simulate_one_portfolio(start_date=start, interval=interval)
+        # bs.cal_turnover()
 
 
 if __name__ == '__main__':
