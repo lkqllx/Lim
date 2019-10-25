@@ -430,8 +430,8 @@ class Backtest:
 
             pd.DataFrame(np.array([self.total_value_history, self.total_value_tranc_history]).T, index=self.valid_dates,
                          columns=['averaged daily return', 'averaged daily return after transaction cost']).\
-                to_csv(f'data/interim/ave_returns/{self._ret_type}.csv')
-            self.save(save_to=f'data/interim/one_portfolio_individual/individual_pnl_{self._ret_type}.csv')
+                to_csv(f'data/interim/ave_returns/{self._ret_type}_{start_date}.csv')
+            self.save(save_to=f'data/interim/one_portfolio_individual/individual_pnl_{self._ret_type}_{start_date}.csv')
 
     @staticmethod
     def cal_daily_transaction_cost(next_pos, today_pos):
@@ -558,8 +558,8 @@ def run_backtest():
     bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
     for mode in modes:
         interval = int(re.findall('cmc([0-9]+).+', mode)[0])
-        for start in range(interval):
-            bs.simulate_one_portfolio(start_date=start, interval=interval)
+        # for start in range(interval):
+        bs.simulate_one_portfolio(start_date=0, interval=interval)
         # bs.cal_turnover()
 
 
