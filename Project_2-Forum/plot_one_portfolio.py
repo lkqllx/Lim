@@ -47,6 +47,7 @@ def plot_lines(offest):
     csi300_close_ret.name = f'CSI300_cmc1'
 
 
+
     files = os.listdir('data/interim/ave_returns/')
     pnl_files = [file for file in files if re.match(f'cmc[\w_.]+ret_{offest}.csv', file)]
     pnl_files = sorted(pnl_files, key=lambda x: int(re.findall(f'cmc(\d+)_.+{offest}.csv', x)[0]))
