@@ -107,53 +107,55 @@ class CrossSignal:
 
     """
 
-    def __init__(self, start='2015-01-01', end='2019-07-31', number_of_days_for_averaging=20):
+    def __init__(self, start='2015-01-01', end='2019-07-31', number_of_days_for_averaging=20, signal_period=1,
+                 decile=1):
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
         self._end = dt.datetime.strptime(end, '%Y-%m-%d')
         self.date_list = [self._end - dt.timedelta(idx) for idx in range((self._end - self._start).days + 1)]
         self.date_list.reverse()
         self.number_of_days_for_averaging = number_of_days_for_averaging
+        self.signal_period = signal_period
+        self.decile = decile
         self.preprocess()
 
     def preprocess(self):
-        try:
-            self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix.csv',
-                                                  index_col=0, parse_dates=True)
-        except:
-            files = os.listdir('data/historical/2019-10-15')
-            files = [file for file in files if re.match('[\d]+.csv', file)]
-            files = sorted(files, key=lambda x: int(x.split('.')[0]))
-            tickers = [file.split('.')[0] for file in files]
-            self.stocks_post_matrix = pd.DataFrame(index=self.date_list)
-            with Bar('CrossSignal Preprocessing', max=len(files)) as bar:
-                for ticker, file in zip(tickers, files):
-                    bar.next()
-                    df = pd.read_csv(f'data/historical/2019-10-15/{ticker}.csv',
-                                     index_col=0, parse_dates=True, low_memory=False)
-                    df = df.resample('3H').count()
-                    df.reset_index(inplace=True)
+        # try:
+        #     self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix.csv',
+        #                                           index_col=0, parse_dates=True)
+        # except:
+        files = os.listdir('data/historical/2019-10-15')
+        files = [file for file in files if re.match('[\d]+.csv', file)]
+        files = sorted(files, key=lambda x: int(x.split('.')[0]))
+        tickers = [file.split('.')[0] for file in files]
+        self.stocks_post_matrix = pd.DataFrame(index=self.date_list)
+        with Bar('CrossSignal Preprocessing', max=len(files)) as bar:
+            for ticker, file in zip(tickers, files):
+                bar.next()
+                df = pd.read_csv(f'data/historical/2019-10-15/{ticker}.csv',
+                                 index_col=0, parse_dates=True, low_memory=False)
+                df = df.resample('3H').count()
+                df.reset_index(inplace=True)
 
-                    # We need to set hour column to select the period between 9AM:3PM
-                    df['Hour'] = df['Time'].apply(lambda x: x.hour)
-                    df.loc[(df['Hour'] < 15) & (df['Hour'] >= 9), 'Title'] = 0
+                # We need to set hour column to select the period between 9AM:3PM
+                df['Hour'] = df['Time'].apply(lambda x: x.hour)
+                df.loc[(df['Hour'] < 15) & (df['Hour'] >= 9), 'Title'] = 0
 
-                    # Resample with a base = 15 and freq = 24H
-                    # Since we have made 9AM-3PM = 0, so we can sum the 24 hour starting from 3PM
-                    curr_stock_posts_vec = pd.Series(df['Title'].values, index=df.Time, name=ticker)
-                    curr_stock_posts_vec = curr_stock_posts_vec.groupby(pd.Grouper(freq='24H', base=15)).sum()
+                # Resample with a base = 15 and freq = 24H
+                # Since we have made 9AM-3PM = 0, so we can sum the 24 hour starting from 3PM
+                curr_stock_posts_vec = pd.Series(df['Title'].values, index=df.Time, name=ticker)
+                curr_stock_posts_vec = curr_stock_posts_vec.groupby(pd.Grouper(freq='24H', base=15)).sum()
 
-                    # This is to make the Hour from 15 to 0AM
-                    curr_stock_posts_vec = curr_stock_posts_vec.resample('D').sum()
+                # This is to make the Hour from 15 to 0AM
+                curr_stock_posts_vec = curr_stock_posts_vec.resample('D').sum()
 
-                    # Critical step is to add one day to the vector since this will be used to
-                    # predict the return of next day
-                    curr_stock_posts_vec.index = pd.DatetimeIndex(curr_stock_posts_vec.index) + pd.DateOffset(1)
+                # Critical step is to add one day to the vector since this will be used to
+                # predict the return of next day
+                curr_stock_posts_vec.index = pd.DatetimeIndex(curr_stock_posts_vec.index) + pd.DateOffset(1)
 
-                    # This is to fix the date range
-                    curr_stock_posts_vec = curr_stock_posts_vec[
-                        (curr_stock_posts_vec.index >= self._start) & (curr_stock_posts_vec.index <= self._end)]
-                    self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
-
+                # This is to fix the date range
+                curr_stock_posts_vec = curr_stock_posts_vec[
+                    (curr_stock_posts_vec.index >= self._start) & (curr_stock_posts_vec.index <= self._end)]
+                self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
 
             self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
             self.stocks_post_matrix.to_csv('data/interim/stocks_post_matrix.csv')
@@ -177,6 +179,7 @@ class CrossSignal:
                 else:
                     for prev in cum_posts:
                         self.stocks_post_matrix.iloc[idx, :] += self.stocks_post_matrix.iloc[prev, :]
+                        self.stocks_post_matrix.iloc[prev, :] = 0
                     cum_posts = []
                     is_in_holiday = False
             else:
@@ -204,13 +207,20 @@ class CrossSignal:
 
     @property
     def equal_weight_rank_signal(self):
-        daily_post_rank_matrix = self.stocks_post_matrix.rank(1, method='first', ascending=True)
-        rank_max = (daily_post_rank_matrix.max(axis=1) * 0.95).round(0)  # The place to change percentage
-        daily_post_rank_matrix = daily_post_rank_matrix.gt(rank_max, axis=0)
+        self.stocks_post_matrix = self.stocks_post_matrix.rolling(f'{self.signal_period}D').sum()
+        curr_post_matrix = self.stocks_post_matrix.rolling('3D').sum()
+        daily_post_rank_matrix = curr_post_matrix.rank(1, method='first', ascending=True)
+
+        rank_max = (daily_post_rank_matrix.max(axis=1) * self.decile * 0.1).round(0)  # The place to change percentage
+        rank_min = (daily_post_rank_matrix.max(axis=1) * (self.decile - 1) * 0.1).round(0)
+        daily_post_rank_matrix = daily_post_rank_matrix.gt(rank_min, axis=0) & \
+                                 daily_post_rank_matrix.le(rank_max, axis=0)
 
         daily_post_change_rank_matrix = self.ranking_trivial_matrix
-        change_rank_max = (daily_post_change_rank_matrix.max(axis=1) * 0.75).round(0)
-        daily_post_change_rank_matrix = daily_post_change_rank_matrix.gt(change_rank_max, axis=0)
+        change_rank_max = (daily_post_change_rank_matrix.max(axis=1) * self.decile * 0.1).round(0)
+        change_rank_min = (daily_post_change_rank_matrix.max(axis=1) * (self.decile - 1) * 0.1).round(0)
+        daily_post_change_rank_matrix = daily_post_change_rank_matrix.gt(change_rank_min, axis=0) & \
+                                        daily_post_change_rank_matrix.le(change_rank_max, axis=0)
 
         # At here, True: buy False: No position
         whether_to_buy_matrix = daily_post_rank_matrix | daily_post_change_rank_matrix
@@ -243,7 +253,7 @@ class Backtest:
     """
 
     def __init__(self, signal: pd.DataFrame, start='2015-01-01', end='2019-07-31', number_of_skipping_days=60,
-                 number_of_prices_delay=41):
+                 number_of_prices_delay=2, path=None):
         self._signal = signal.fillna(0)
         self._tickers = signal.columns.values.tolist()
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
@@ -264,6 +274,7 @@ class Backtest:
         self.inventory_dates = []
         self.lot_size = 100
         self.number_of_prices_delay = number_of_prices_delay
+        self.path = path
         self.preprocess()
 
     @staticmethod
@@ -273,11 +284,9 @@ class Backtest:
 
     def preprocess(self):
         """Build a multi-indexed matrix with ticker as level 1, [close, open, ret] as level 2, timestamp as level 3"""
-        try:
-            self.prices_matrix = pd.read_csv('data/interim/prices_matrix.csv', index_col=0, parse_dates=True,
-                                             header=[0, 1])
-        except:
+        with Bar('Concatenating Returns', max=len(self._tickers)) as bar:
             for ticker in self._tickers:
+                bar.next()
                 ticker = str(ticker)
                 curr_df = pd.read_csv(f'data/prices/{ticker}.csv', index_col=0, low_memory=False,
                                       names=pd.MultiIndex.from_product([[ticker], ['open', 'close']]))[1:]
@@ -287,13 +296,13 @@ class Backtest:
                 curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] -
                                                        curr_df.loc[:, (ticker, 'open')]) / \
                                                       curr_df.loc[:, (ticker, 'open')]
-                curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')].shift(-1) -
-                                                       curr_df.loc[:, (ticker, 'open')]) / \
-                                                      curr_df.loc[:, (ticker, 'open')]
+                curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')] -
+                                                       curr_df.loc[:, (ticker, 'open')].shift(1)) / \
+                                                      curr_df.loc[:, (ticker, 'open')].shift(1)
                 for idx in range(1, self.number_of_prices_delay):
-                    curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-idx) -
-                                                                 curr_df.loc[:, (ticker, 'close')]) / \
-                                                                curr_df.loc[:, (ticker, 'close')]
+                    curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')] -
+                                                                 curr_df.loc[:, (ticker, 'close')].shift(idx)) / \
+                                                                curr_df.loc[:, (ticker, 'close')].shift(idx)
 
                 curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
                                                              curr_df.loc[:, (ticker, 'close')].shift(-1)) / \
@@ -305,7 +314,7 @@ class Backtest:
                     self.prices_matrix = curr_df
 
                 # self.prices_matrix.fillna(0, inplace=True)
-            self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
+        self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
 
         # Choose the preferred ret
         self.ret_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == 'cmc1_ret']
@@ -430,8 +439,8 @@ class Backtest:
 
             pd.DataFrame(np.array([self.total_value_history, self.total_value_tranc_history]).T, index=self.valid_dates,
                          columns=['averaged daily return', 'averaged daily return after transaction cost']).\
-                to_csv(f'data/interim/ave_returns/{self._ret_type}_{start_date}.csv')
-            self.save(save_to=f'data/interim/one_portfolio_individual/individual_pnl_{self._ret_type}_{start_date}.csv')
+                to_csv(f'{self.path}/{self._ret_type}.csv')
+            # self.save(save_to=f'{self.path}/individual_pnl_{self._ret_type}_{start_date}.csv')
 
     @staticmethod
     def cal_daily_transaction_cost(next_pos, today_pos):
@@ -543,25 +552,34 @@ def sentiment(texts: str):
 
 
 def run_backtest():
+
+    """
+    1. Run by decile
+    2. Run by counting different periods posts
+    3. Run by different holding periods
+    """
     start = '2015-01-01'
     end = '2019-07-31'
-    cs = CrossSignal(start=start, end=end)
-    # print(cs.low_rank_equal_weight_signal)
-
     try:
         modes = sys.argv[1]
         if modes == 'all':
-            modes = [f'cmc{idx}_ret' for idx in [3, 5, 10, 15, 20, 30]]
+            modes = [f'cmc{idx}_ret' for idx in [1, 3, 5, 10, 15, 20, 30]]
     except IndexError:
         modes = ['cmc1_ret']
 
-    bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
-    for mode in modes:
-        interval = int(re.findall('cmc([0-9]+).+', mode)[0])
-        # for start in range(interval):
-        bs.simulate_one_portfolio(start_date=0, interval=interval)
-        # bs.cal_turnover()
-
+    for decile in range(1, 11):
+        for holding in range(1, 11):
+            print('*' * 40)
+            print(' ' * 9, f'Decile {decile} - Holding {holding}')
+            print('*' * 40)
+            if not os.path.exists(f'data/params/Decile {decile} - Holding {holding}'):
+                os.mkdir(f'data/params/Decile {decile} - Holding {holding}')
+            cs = CrossSignal(start=start, end=end, signal_period=holding, decile=decile)
+            bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end,
+                          path=f'data/params/Decile {decile} - Holding {holding}')
+            for mode in modes:
+                interval = int(re.findall('cmc([0-9]+).+', mode)[0])
+                bs.simulate_one_portfolio(start_date=0, interval=interval)
 
 if __name__ == '__main__':
     run_backtest()

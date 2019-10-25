@@ -41,7 +41,7 @@ def plot_lines():
     csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)
     csi300_close = csi300['Price']
     csi300_close = csi300_close.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
-    csi300_close_ret = (csi300_close.shift(1) - csi300_close) / csi300_close
+    csi300_close_ret = (csi300_close - csi300_close.shift(-1)) / csi300_close.shift(-1)
     csi300_close_ret.name = f'CSI300_cmc{1}'
 
 
