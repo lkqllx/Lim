@@ -4,3 +4,11 @@
 *.exe
 *.txt
 *.html
+chromedriver.exe
+stdout.txt
+*.csv
+chromedriver
+Total Returns.html
+chromedriver
+*.html
+data/
