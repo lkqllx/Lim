@@ -119,50 +119,50 @@ class CrossSignal:
         self.preprocess()
 
     def preprocess(self):
-        # try:
-        #     self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix.csv',
-        #                                           index_col=0, parse_dates=True)
-        # except:
-        files = os.listdir('data/historical/2019-10-15')
-        files = [file for file in files if re.match('[\d]+.csv', file)]
-        files = sorted(files, key=lambda x: int(x.split('.')[0]))
-        tickers = [file.split('.')[0] for file in files]
-        self.stocks_post_matrix = pd.DataFrame(index=self.date_list)
-        with Bar('CrossSignal Preprocessing', max=len(files)) as bar:
-            for ticker, file in zip(tickers, files):
-                bar.next()
-                df = pd.read_csv(f'data/historical/2019-10-15/{ticker}.csv',
-                                 index_col=0, parse_dates=True, low_memory=False)
-                df = df.resample('3H').count()
-                df.reset_index(inplace=True)
+        try:
+            self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix.csv',
+                                                  index_col=0, parse_dates=True)
+        except:
+            files = os.listdir('data/historical/2019-10-15')
+            files = [file for file in files if re.match('[\d]+.csv', file)]
+            files = sorted(files, key=lambda x: int(x.split('.')[0]))
+            tickers = [file.split('.')[0] for file in files]
+            self.stocks_post_matrix = pd.DataFrame(index=self.date_list)
+            with Bar('CrossSignal Preprocessing', max=len(files)) as bar:
+                for ticker, file in zip(tickers, files):
+                    bar.next()
+                    df = pd.read_csv(f'data/historical/2019-10-15/{ticker}.csv',
+                                     index_col=0, parse_dates=True, low_memory=False)
+                    df = df.resample('3H').count()
+                    df.reset_index(inplace=True)
 
-                # We need to set hour column to select the period between 9AM:3PM
-                df['Hour'] = df['Time'].apply(lambda x: x.hour)
-                df.loc[(df['Hour'] < 15) & (df['Hour'] >= 9), 'Title'] = 0
+                    # We need to set hour column to select the period between 9AM:3PM
+                    df['Hour'] = df['Time'].apply(lambda x: x.hour)
+                    df.loc[(df['Hour'] < 15) & (df['Hour'] >= 9), 'Title'] = 0
 
-                # Resample with a base = 15 and freq = 24H
-                # Since we have made 9AM-3PM = 0, so we can sum the 24 hour starting from 3PM
-                curr_stock_posts_vec = pd.Series(df['Title'].values, index=df.Time, name=ticker)
-                curr_stock_posts_vec = curr_stock_posts_vec.groupby(pd.Grouper(freq='24H', base=15)).sum()
+                    # Resample with a base = 15 and freq = 24H
+                    # Since we have made 9AM-3PM = 0, so we can sum the 24 hour starting from 3PM
+                    curr_stock_posts_vec = pd.Series(df['Title'].values, index=df.Time, name=ticker)
+                    curr_stock_posts_vec = curr_stock_posts_vec.groupby(pd.Grouper(freq='24H', base=15)).sum()
 
-                # This is to make the Hour from 15 to 0AM
-                curr_stock_posts_vec = curr_stock_posts_vec.resample('D').sum()
+                    # This is to make the Hour from 15 to 0AM
+                    curr_stock_posts_vec = curr_stock_posts_vec.resample('D').sum()
 
-                # Critical step is to add one day to the vector since this will be used to
-                # predict the return of next day
-                curr_stock_posts_vec.index = pd.DatetimeIndex(curr_stock_posts_vec.index) + pd.DateOffset(1)
+                    # Critical step is to add one day to the vector since this will be used to
+                    # predict the return of next day
+                    curr_stock_posts_vec.index = pd.DatetimeIndex(curr_stock_posts_vec.index) + pd.DateOffset(1)
 
-                # This is to fix the date range
-                curr_stock_posts_vec = curr_stock_posts_vec[
-                    (curr_stock_posts_vec.index >= self._start) & (curr_stock_posts_vec.index <= self._end)]
-                self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
+                    # This is to fix the date range
+                    curr_stock_posts_vec = curr_stock_posts_vec[
+                        (curr_stock_posts_vec.index >= self._start) & (curr_stock_posts_vec.index <= self._end)]
+                    self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
 
-            self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
-            self.stocks_post_matrix.to_csv('data/interim/stocks_post_matrix.csv')
+                self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
+                self.stocks_post_matrix.to_csv('data/interim/stocks_post_matrix.csv')
 
-            """Handle the weekend posts"""
-            self.add_weekend_posts()
-            self.stocks_post_matrix.to_csv('data/interim/weekend_stocks_post_matrix.csv')
+                """Handle the weekend posts"""
+                self.add_weekend_posts()
+                self.stocks_post_matrix.to_csv('data/interim/weekend_stocks_post_matrix.csv')
 
     def add_weekend_posts(self):
         """Deal with weekend cases that the posts should be aggregated into next trading day"""
@@ -292,38 +292,38 @@ class Backtest:
         csi300_close = csi300_close.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
         self.csi300_close_ret = (csi300_close.shift(1) - csi300_close) / csi300_close
         self.csi300_close_ret.name = f'CSI300_cmc1'
-        # try:
-        #     self.prices_matrix = pd.read_csv('data/interim/prices_matrix.csv', index_col=0, parse_dates=True,
-        #                                      header=[0, 1])
-        # except:
-        with Bar('Concatenating Returns', max=len(self._tickers)) as bar:
-            for ticker in self._tickers:
-                bar.next()
-                ticker = str(ticker)
-                curr_df = pd.read_csv(f'data/prices/{ticker}.csv', index_col=0, low_memory=False,
-                                      names=pd.MultiIndex.from_product([[ticker], ['open', 'close']]))[1:]
-                curr_df.index = pd.to_datetime(curr_df.index)
-                curr_df = curr_df[(curr_df.index >= self._start) & (curr_df.index <= self._end)]
-                curr_df = curr_df.astype(float)
-                curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] -
-                                                       curr_df.loc[:, (ticker, 'open')]) / \
-                                                      curr_df.loc[:, (ticker, 'open')]
-                curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')] -
-                                                       curr_df.loc[:, (ticker, 'open')].shift(1)) / \
-                                                      curr_df.loc[:, (ticker, 'open')].shift(1)
-                for idx in range(1, self.number_of_prices_delay):
-                    curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')] -
-                                                                 curr_df.loc[:, (ticker, 'close')].shift(idx)) / \
-                                                                curr_df.loc[:, (ticker, 'close')].shift(idx)
+        try:
+            self.prices_matrix = pd.read_csv('data/interim/prices_matrix.csv', index_col=0, parse_dates=True,
+                                             header=[0, 1])
+        except:
+            with Bar('Concatenating Returns', max=len(self._tickers)) as bar:
+                for ticker in self._tickers:
+                    bar.next()
+                    ticker = str(ticker)
+                    curr_df = pd.read_csv(f'data/prices/{ticker}.csv', index_col=0, low_memory=False,
+                                          names=pd.MultiIndex.from_product([[ticker], ['open', 'close']]))[1:]
+                    curr_df.index = pd.to_datetime(curr_df.index)
+                    curr_df = curr_df[(curr_df.index >= self._start) & (curr_df.index <= self._end)]
+                    curr_df = curr_df.astype(float)
+                    curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] -
+                                                           curr_df.loc[:, (ticker, 'open')]) / \
+                                                          curr_df.loc[:, (ticker, 'open')]
+                    curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')] -
+                                                           curr_df.loc[:, (ticker, 'open')].shift(1)) / \
+                                                          curr_df.loc[:, (ticker, 'open')].shift(1)
+                    for idx in range(1, self.number_of_prices_delay):
+                        curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')] -
+                                                                     curr_df.loc[:, (ticker, 'close')].shift(idx)) / \
+                                                                    curr_df.loc[:, (ticker, 'close')].shift(idx)
 
-                curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
-                                                             curr_df.loc[:, (ticker, 'close')].shift(-1)) / \
-                                                            curr_df.loc[:, (ticker, 'close')].shift(-1)
+                    curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
+                                                                 curr_df.loc[:, (ticker, 'close')].shift(-1)) / \
+                                                                curr_df.loc[:, (ticker, 'close')].shift(-1)
 
-                try:
-                    self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
-                except:
-                    self.prices_matrix = curr_df
+                    try:
+                        self.prices_matrix = pd.concat([self.prices_matrix, curr_df], axis=1)
+                    except:
+                        self.prices_matrix = curr_df
 
                 # self.prices_matrix.fillna(0, inplace=True)
         self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
@@ -605,7 +605,7 @@ def run_backtest():
     for decile in range(1, 11):
         for holding in range(1, 11):
             print('*' * 40)
-            print(' ' * 9, f'Decile {decile} - Holding {holding}')
+            print(' ' * 9, f'Decile {decile} - Counting {holding}')
             print('*' * 40)
             if not os.path.exists(f'data/params/Decile {decile} - Holding {holding}'):
                 os.mkdir(f'data/params/Decile {decile} - Holding {holding}')
