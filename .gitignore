@@ -108,12 +108,9 @@ venv.bak/
 .idea/
 chromedriver.exe
 stdout.txt
-<<<<<<< HEAD
 *.csv
 chromedriver
 Total Returns.html
-=======
 chromedriver
-Total Returns*.html
-*.csv
->>>>>>> 37b5886ab77a2929883445c52a185f6e7097c475
+*.html
+data/
