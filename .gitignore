@@ -12,3 +12,5 @@ Total Returns.html
 chromedriver
 *.html
 data/
+.DS_Store
+__pycache__/
