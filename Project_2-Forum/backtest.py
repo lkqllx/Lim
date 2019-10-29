@@ -198,13 +198,14 @@ class CrossSignal:
                     is_in_holiday = True
                     cum_posts.append(idx)
 
-    @property
     def trivial_change_matrix(self):
-        return (self.stocks_post_matrix / self.stocks_post_matrix.shift(1)).replace([np.inf, -np.inf], np.nan)
+        stocks_post_matrix = pd.read_csv('data/interim/stocks_post_matrix.csv',                                        index_col=0, parse_dates=True)
+        change_matrix = deepcopy(stocks_post_matrix.dropna(how='all'))
+        change_matrix = (change_matrix / change_matrix.shift(1)).replace([np.inf, -np.inf], np.nan)
+        return change_matrix
 
-    @property
     def ranking_trivial_matrix(self):
-        return self.trivial_change_matrix.rank(1, method='first', ascending=True)
+        return self.trivial_change_matrix().rank(1, method='first', ascending=True)
 
     @property
     def log_change_matrix(self):
@@ -228,7 +229,7 @@ class CrossSignal:
         daily_post_rank_matrix = daily_post_rank_matrix.gt(rank_min, axis=0) & \
                                  daily_post_rank_matrix.le(rank_max, axis=0)
 
-        daily_post_change_rank_matrix = self.ranking_trivial_matrix
+        daily_post_change_rank_matrix = deepcopy(self.ranking_trivial_matrix())
         change_rank_max = (daily_post_change_rank_matrix.max(axis=1) * self.decile * 0.1).round(0)
         change_rank_min = (daily_post_change_rank_matrix.max(axis=1) * (self.decile - 1) * 0.1).round(0)
         daily_post_change_rank_matrix = daily_post_change_rank_matrix.gt(change_rank_min, axis=0) & \
@@ -236,7 +237,7 @@ class CrossSignal:
 
         # At here, True: buy False: No position
         # whether_to_buy_matrix = daily_post_rank_matrix | daily_post_change_rank_matrix
-        whether_to_buy_matrix = daily_post_rank_matrix
+        whether_to_buy_matrix = daily_post_change_rank_matrix
 
         weights = whether_to_buy_matrix.apply(lambda row: row / 1, axis=1)  # return 1 means buy and 0 to sell
         return weights
@@ -615,18 +616,18 @@ def run_backtest():
     #     bs.different_start_daily_returns_transac = []
         # bs.cal_turnover()
 
-    for decile in range(1, 11):
+    for decile in range(2, 11):
         for counting in range(1, 11):
     # for decile in [1]:
     #     for counting in [10]:
             print('*' * 40)
             print(' ' * 9, f'Decile {decile} - Counting {counting}')
             print('*' * 40)
-            if not os.path.exists(f'data/params_top_rank/Decile {decile} - Counting {counting}'):
-                os.mkdir(f'data/params_top_rank/Decile {decile} - Counting {counting}')
+            if not os.path.exists(f'data/params_top_change/Decile {decile} - Counting {counting}'):
+                os.mkdir(f'data/params_top_change/Decile {decile} - Counting {counting}')
             cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile)
             bs = Backtest(cs.equal_weight_rank_signal(), start=start, end=end,
-                          path=f'data/params_top_rank/Decile {decile} - Counting {counting}')
+                          path=f'data/params_top_change/Decile {decile} - Counting {counting}')
             for mode in modes:
                 interval = int(re.findall('cmc([0-9]+).+', mode)[0])
                 bs.simulate_one_portfolio(start_date=0, interval=interval)
