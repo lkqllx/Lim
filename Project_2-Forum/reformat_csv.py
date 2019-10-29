@@ -1,11 +1,12 @@
-import rpy2.robjects as robjects
-from rpy2.robjects import pandas2ri
+# import rpy2.robjects as robjects
+# from rpy2.robjects import pandas2ri
 import pandas as pd
 import datetime as dt
 from progress.bar import Bar
-pandas2ri.activate
+# pandas2ri.activate
 import numpy as np
-import jqdatasdk
+import jqdatasdk as jq
+import pickle
 
 
 def process_rds_to_csv():
@@ -55,11 +56,21 @@ def decompo_pnls():
 
 
 def download_members():
-
-
+    jq.auth('18810906018', '906018')
+    all_ticker = []
+    dates = [dt.datetime.strptime('2015-01-01', '%Y-%m-%d') + dt.timedelta(31*idx) for idx in range(58)]
+    with Bar('Processing', max=len(dates)) as bar:
+        for date in dates:
+            bar.next()
+            curr_tickers = jq.get_index_stocks('000300.XSHG', date)
+            all_ticker += curr_tickers
+    all_ticker = set(all_ticker)
+    with open('data/all_list.pkl', 'wb') as f:
+        pickle.dump(all_ticker, f)
 
 
 
 
 if __name__ == '__main__':
-    extract_excess_returns_to_r()
+    # extract_excess_returns_to_r()
+    download_members()

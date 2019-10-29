@@ -9,7 +9,7 @@ import concurrent.futures
 import requests
 import threading
 import time
-import re
+import re, pickle
 import multiprocessing as mp
 from progress.bar import Bar
 import logging
@@ -278,13 +278,19 @@ def run_by_multiprocesses():
     if not os.path.exists(f'data/historical/{date}'):  # global variable: date
         os.mkdir(f'data/historical/{date}')
 
-    csi300 = pd.read_excel('data/target_list/csi300.xls', index_col=0).values[:, 3].tolist()
-    csi300_list = []
-    for ticker in csi300:
-        if ticker >= 600000:
-            csi300_list.append(f'{ticker}')
-        else:
-            csi300_list.append(f'{ticker}'.zfill(6))
+    # csi300 = pd.read_excel('data/target_list/csi300.xls', index_col=0).values[:, 3].tolist()
+    with open('data/all_list.pkl', 'rb') as f:
+        csi300 = pickle.load(f)
+    csi300 = [ticker.split('.')[0] for ticker in csi300]
+    existed_files = os.listdir('data/historical/2019-10-15')
+    existed_files = [file.split('.')[0] for file in existed_files if re.match('.+csv', file)]
+
+    csi300_list = [file for file in csi300 if file not in existed_files]
+    # for ticker in csi300:
+        # if ticker >= 600000:
+        #     csi300_list.append(f'{ticker}')
+        # else:
+        #     csi300_list.append(f'{ticker}'.zfill(6))
 
     # csi300_list = ['600004']
     pool = mp.Pool(8)  # We may use multiple processes to speed up the program but progress bar will not appear properly
