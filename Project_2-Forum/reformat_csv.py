@@ -3,7 +3,9 @@ from rpy2.robjects import pandas2ri
 import pandas as pd
 import datetime as dt
 from progress.bar import Bar
-pandas2ri.activate()
+pandas2ri.activate
+import numpy as np
+import jqdatasdk
 
 
 def process_rds_to_csv():
@@ -28,6 +30,35 @@ def extract_excess_returns_to_r():
     for target_year in targets:
         curr_df = all_excess[all_excess['Time'] == target_year]
         curr_df.to_csv(f'R/excess_ret/{target_year}.csv')
+
+
+def decompo_pnls():
+    all_pnl = pd.read_csv('C:/Users/andrew.li/Desktop/individual_pnl_cmc10_ret_0.csv', index_col=0, parse_dates=True)
+    average_pnl = all_pnl['Total'] + 1
+    average_pnl = average_pnl.cumprod()
+    final_pnl = average_pnl[-1] - 1
+    all_pnl = all_pnl.drop('Total', axis=True)
+
+    all_pnl = all_pnl.apply(lambda x: x / np.count_nonzero(x), axis=1)
+
+    for ticker in all_pnl.columns:
+        curr_df = all_pnl.loc[:, ticker] + 1
+        curr_df = curr_df.cumprod()
+        ticker_pnl = curr_df[-1] - 1
+
+        try:
+            all_percent_df = pd.concat([all_percent_df, pd.Series([ticker_pnl/ final_pnl], name=ticker)], axis=1)
+        except:
+            all_percent_df = pd.Series([ticker_pnl / final_pnl], name=ticker)
+
+    all_percent_df.to_csv('C:/Users/andrew.li/Desktop/pnl_contribution.csv')
+
+
+def download_members():
+
+
+
+
 
 
 if __name__ == '__main__':
