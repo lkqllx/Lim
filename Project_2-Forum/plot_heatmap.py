@@ -84,11 +84,11 @@ def heatmap(all_pnls, method):
     #         grid.add(hms[idx], grid_opts=opts.GridOpts(pos_right="60%"))
     #         page.add(grid)
     # page.render(path='figs/heatmaps.html')
-    tab = Tab(page_title=f'{method}_heatmaps_rank'.upper())
+    tab = Tab(page_title=f'{method}_heatmaps_change'.upper())
     keys, values = list(zip(*all_pnls))
     for key, hm in zip(keys, hms):
         tab.add(hm, key)
-    tab.render(path=f'figs/{method}_heatmaps_rank.html')
+    tab.render(path=f'figs/{method}_heatmaps_change.html')
 
 
 def comp_cum_pnl(df, benchmark):
@@ -108,6 +108,6 @@ def comp_cum_sharpe(df, benchmark):
 
 
 if __name__ == '__main__':
-    method = 'sharpe'
-    path = 'data/params_top_rank'
+    method = 'pnl'
+    path = 'data/params_top_change'
     plot(path, method)

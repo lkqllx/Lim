@@ -199,8 +199,9 @@ class CrossSignal:
                     cum_posts.append(idx)
 
     def trivial_change_matrix(self):
-        stocks_post_matrix = pd.read_csv('data/interim/stocks_post_matrix.csv',                                        index_col=0, parse_dates=True)
+        stocks_post_matrix = pd.read_csv('data/interim/stocks_post_matrix.csv',  index_col=0, parse_dates=True)
         change_matrix = deepcopy(stocks_post_matrix.dropna(how='all'))
+        change_matrix = change_matrix.rolling(f'{self.signal_period}D',min_periods=self.signal_period).sum()
         change_matrix = (change_matrix / change_matrix.shift(1)).replace([np.inf, -np.inf], np.nan)
         return change_matrix
 
