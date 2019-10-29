@@ -23,7 +23,7 @@ def plot(path):
                     decile, count = re.findall('Decile ([\d]+) - Counting ([\d]+)', dir_path)[0]
                     for file in os.listdir(os.path.join(root, dir_path)):
                         bar.next()
-                        if re.match('.+csv', file):
+                        if re.match('cmc.+csv', file):
                             """For different files"""
                             curr_df = pd.read_csv(os.path.join(root, dir_path, file),
                                                   index_col=0, parse_dates=True).iloc[:, 1]
@@ -32,6 +32,7 @@ def plot(path):
                             except:
                                 benchmark = pd.concat([curr_df, csi300_close_ret], axis=1).dropna()
                                 benchmark = benchmark['CSI300_cmc1']
+                                # benchmark.to_csv('data/bm.csv')
                                 cum_pnl = comp_cum_pnl(curr_df, benchmark)
 
                             holding = file.split('_')[0]
@@ -72,7 +73,7 @@ def heatmap(all_pnls):
     keys, values = list(zip(*all_pnls))
     for key, hm in zip(keys, hms):
         tab.add(hm, key)
-    tab.render(path='figs/heatmaps.html')
+    tab.render(path='figs/heatmaps_rank.html')
 
 
 def comp_cum_pnl(df, benchmark):
@@ -83,5 +84,5 @@ def comp_cum_pnl(df, benchmark):
 
 
 if __name__ == '__main__':
-    path = 'data/params'
+    path = 'data/params_top_change_prev'
     plot(path)

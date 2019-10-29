@@ -133,7 +133,9 @@ class CrossSignal:
                     bar.next()
                     df = pd.read_csv(f'data/historical/2019-10-15/{ticker}.csv',
                                      index_col=0, parse_dates=True, low_memory=False)
+                    last_date = df.index[-1]
                     df = df.resample('3H').count()
+                    df = df[df.index >= last_date]
                     df.reset_index(inplace=True)
 
                     # We need to set hour column to select the period between 9AM:3PM
@@ -157,12 +159,21 @@ class CrossSignal:
                         (curr_stock_posts_vec.index >= self._start) & (curr_stock_posts_vec.index <= self._end)]
                     self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
 
-                self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
+                # self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
                 self.stocks_post_matrix.to_csv('data/interim/stocks_post_matrix.csv')
 
                 """Handle the weekend posts"""
                 self.add_weekend_posts()
+                self.delete_zeros_weekend()
                 self.stocks_post_matrix.to_csv('data/interim/weekend_stocks_post_matrix.csv')
+
+    def delete_zeros_weekend(self):
+        for col in self.stocks_post_matrix.columns:
+            curr_series = self.stocks_post_matrix.loc[:, col].dropna()
+            curr_series = curr_series[curr_series != 0]
+            first_valid_index = curr_series.index[0]
+            self.stocks_post_matrix.loc[:, col][self.stocks_post_matrix.index < first_valid_index] = np.nan
+
 
     def add_weekend_posts(self):
         """Deal with weekend cases that the posts should be aggregated into next trading day"""
@@ -205,10 +216,11 @@ class CrossSignal:
     def log_ranking_matrix(self):
         return self.log_change_matrix.rank(1, method='first', ascending=True)
 
-    @property
+
     def equal_weight_rank_signal(self):
-        self.stocks_post_matrix = self.stocks_post_matrix.rolling(f'{self.signal_period}D').sum()
-        curr_post_matrix = self.stocks_post_matrix.rolling('3D').sum()
+        self.stocks_post_matrix = self.stocks_post_matrix.rolling(f'{self.signal_period}D',
+                                                                  min_periods=self.signal_period).sum()
+        curr_post_matrix = deepcopy(self.stocks_post_matrix)
         daily_post_rank_matrix = curr_post_matrix.rank(1, method='first', ascending=True)
 
         rank_max = (daily_post_rank_matrix.max(axis=1) * self.decile * 0.1).round(0)  # The place to change percentage
@@ -223,7 +235,8 @@ class CrossSignal:
                                         daily_post_change_rank_matrix.le(change_rank_max, axis=0)
 
         # At here, True: buy False: No position
-        whether_to_buy_matrix = daily_post_rank_matrix | daily_post_change_rank_matrix
+        # whether_to_buy_matrix = daily_post_rank_matrix | daily_post_change_rank_matrix
+        whether_to_buy_matrix = daily_post_rank_matrix
 
         weights = whether_to_buy_matrix.apply(lambda row: row / 1, axis=1)  # return 1 means buy and 0 to sell
         return weights
@@ -254,7 +267,7 @@ class Backtest:
 
     def __init__(self, signal: pd.DataFrame, start='2015-01-01', end='2019-07-31', number_of_skipping_days=60,
                  number_of_prices_delay=2, path=None):
-        self._signal = signal.fillna(0)
+        self._signal = signal
         self._tickers = signal.columns.values.tolist()
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
         self._end = dt.datetime.strptime(end, '%Y-%m-%d')
@@ -461,7 +474,7 @@ class Backtest:
             pd.DataFrame(np.array([self.total_value_history, self.total_value_tranc_history]).T, index=self.valid_dates,
                          columns=['averaged daily return', 'averaged daily return after transaction cost']).\
                 to_csv(f'{self.path}/{self._ret_type}.csv')
-            # self.save(save_to=f'{self.path}/individual_pnl_{self._ret_type}_{start_date}.csv')
+            self.save(save_to=f'{self.path}/individual_pnl_{self._ret_type}_{start_date}.csv')
 
     @staticmethod
     def cal_daily_transaction_cost(next_pos, today_pos):
@@ -586,7 +599,7 @@ def run_backtest():
         if modes == 'all':
             modes = [f'cmc{idx}_ret' for idx in [1, 3, 5, 10, 15, 20, 30]]
     except IndexError:
-        modes = ['cmc1_ret']
+        modes = ['cmc10_ret']
 
 
     # bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
@@ -604,14 +617,16 @@ def run_backtest():
 
     for decile in range(1, 11):
         for counting in range(1, 11):
+    # for decile in [1]:
+    #     for counting in [10]:
             print('*' * 40)
             print(' ' * 9, f'Decile {decile} - Counting {counting}')
             print('*' * 40)
-            if not os.path.exists(f'data/params/Decile {decile} - Counting {counting}'):
-                os.mkdir(f'data/params/Decile {decile} - Counting {counting}')
+            if not os.path.exists(f'data/params_top_rank/Decile {decile} - Counting {counting}'):
+                os.mkdir(f'data/params_top_rank/Decile {decile} - Counting {counting}')
             cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile)
-            bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end,
-                          path=f'data/params/Decile {decile} - Counting {counting}')
+            bs = Backtest(cs.equal_weight_rank_signal(), start=start, end=end,
+                          path=f'data/params_top_rank/Decile {decile} - Counting {counting}')
             for mode in modes:
                 interval = int(re.findall('cmc([0-9]+).+', mode)[0])
                 bs.simulate_one_portfolio(start_date=0, interval=interval)
