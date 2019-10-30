@@ -11,6 +11,7 @@ import threading
 import time
 import re, pickle
 import multiprocessing as mp
+import jqdatasdk as jq
 from progress.bar import Bar
 import logging
 
@@ -279,6 +280,7 @@ def run_by_multiprocesses():
         os.mkdir(f'data/historical/{date}')
 
     # csi300 = pd.read_excel('data/target_list/csi300.xls', index_col=0).values[:, 3].tolist()
+
     with open('data/all_list.pkl', 'rb') as f:
         csi300 = pickle.load(f)
     csi300 = [ticker.split('.')[0] for ticker in csi300]

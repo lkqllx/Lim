@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import calendar
 # _tickers = ['600000', '600009']
 # for ticker in _tickers:
 #     ticker = str(ticker)
@@ -18,13 +19,5 @@ import numpy as np
 #         prices_matrix = curr_df
 # prices_matrix = prices_matrix.iloc[:, prices_matrix.columns.get_level_values(1) == 'cmo_ret']
 
-
-inventory = pd.read_csv('C:/Users/andrew.li/Desktop/Projects/Lim/Project_2-Forum/data/interim/inventory_history.csv',
-                 index_col=0, parse_dates=True)
-signal = pd.read_csv('C:/Users/andrew.li/Desktop/Projects/Lim/Project_2-Forum/data/interim/signal_matrix.csv',
-                 index_col=0, parse_dates=True)
-ret = pd.read_csv('C:/Users/andrew.li/Desktop/Projects/Lim/Project_2-Forum/data/interim/ret_matrix.csv',
-                 index_col=0, parse_dates=True)
-print()
 
 

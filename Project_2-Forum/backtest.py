@@ -51,6 +51,7 @@ from pyecharts.charts import Line
 import pyecharts.options as opts
 import matplotlib.pyplot as plt
 import sys
+import jqdatasdk as jq
 import logging
 
 
@@ -120,7 +121,7 @@ class CrossSignal:
 
     def preprocess(self):
         try:
-            self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix.csv',
+            self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix_after_masking.csv',
                                                   index_col=0, parse_dates=True)
         except:
             files = os.listdir('data/historical/2019-10-15')
@@ -159,13 +160,17 @@ class CrossSignal:
                         (curr_stock_posts_vec.index >= self._start) & (curr_stock_posts_vec.index <= self._end)]
                     self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
 
-                # self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
-                self.stocks_post_matrix.to_csv('data/interim/stocks_post_matrix.csv')
+                    # self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
+                    self.create_csi300_mask_matrix()
+                    self.stocks_post_matrix.to_csv('data/interim/stocks_post_matrix.csv')
 
-                """Handle the weekend posts"""
-                self.add_weekend_posts()
-                self.delete_zeros_weekend()
-                self.stocks_post_matrix.to_csv('data/interim/weekend_stocks_post_matrix.csv')
+                    """Handle the weekend posts"""
+                    self.add_weekend_posts()
+                    self.delete_zeros_weekend()
+                    self.stocks_post_matrix.to_csv('data/interim/weekend_stocks_post_matrix.csv')
+                    # self.create_csi300_mask_matrix()
+                    self.stocks_post_matrix.to_csv('data/interim/weekend_stocks_post_matrix_after_masking.csv')
+
 
     def delete_zeros_weekend(self):
         for col in self.stocks_post_matrix.columns:
@@ -217,6 +222,33 @@ class CrossSignal:
     @property
     def log_ranking_matrix(self):
         return self.log_change_matrix.rank(1, method='first', ascending=True)
+
+    def create_csi300_mask_matrix(self):
+        """This function is designed to process the 490 * 490 post matrix to a format that
+        each row only contains 300 constituents at that time"""
+        effective_dates = ['31-07-2019','17-06-2019', '17-12-2018', '11-06-2018', '11-12-2017', '12-06-2017',
+                           '12-12-2016', '13-06-2016', '30-12-2015', '30-11-2015', '15-06-2015', '14-05-2015',
+                           '26-01-2015', '01-01-2015']
+        effective_dates = list(map(dt.datetime.strptime, effective_dates, ['%d-%m-%Y'] * len(effective_dates)))
+        effective_dates.reverse()
+
+        """This mask matrix will be used to multiply with stocks_post_matrix"""
+        mask_matrix = pd.DataFrame(np.nan, index=self.date_list, columns=self.stocks_post_matrix.columns)
+
+        jq.auth('18810906018', '906018')
+        with Bar('Masking', max=len(effective_dates)) as bar:
+            for idx, date in enumerate(effective_dates):
+                bar.next()
+                curr_stocks = jq.get_index_stocks('000300.XSHG', date)
+                curr_stocks = [stock.split('.')[0] for stock in curr_stocks]
+                if idx != len(effective_dates) - 1:
+                    """if not last date, we will assign 1 to available stocks until the Previous 
+                    day of next next effective day"""
+                    mask_matrix.loc[date:effective_dates[idx+1]-dt.timedelta(1), curr_stocks] = 1
+                else:
+                    mask_matrix.loc[effective_dates[idx], curr_stocks] = 1
+        self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
+        self.stocks_post_matrix = mask_matrix * self.stocks_post_matrix
 
 
     def equal_weight_rank_signal(self):
@@ -616,9 +648,8 @@ def run_backtest():
     #     bs.different_start_daily_returns = []
     #     bs.different_start_daily_returns_transac = []
         # bs.cal_turnover()
-
-    for decile in range(2, 11):
-        for counting in range(1, 11):
+    for counting in range(1, 11):
+        for decile in range(1, 11):
     # for decile in [1]:
     #     for counting in [10]:
             print('*' * 40)
