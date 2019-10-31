@@ -1,0 +1,20 @@
+root - ERROR - Parsing - too many values to unpack (expected 5)
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\scraping_table.py", line 88, in parsing
+    readings, comments, title, author, published_time = text.split('\n')
+ValueError: too many values to unpack (expected 5)
+root - ERROR - Parsing - too many values to unpack (expected 5)
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\scraping_table.py", line 88, in parsing
+    readings, comments, title, author, published_time = text.split('\n')
+ValueError: too many values to unpack (expected 5)
+root - ERROR - Parsing - too many values to unpack (expected 5)
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\scraping_table.py", line 88, in parsing
+    readings, comments, title, author, published_time = text.split('\n')
+ValueError: too many values to unpack (expected 5)
+ ERROR - Parsing - too many values to unpack (expected 5)
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\scraping_table.py", line 88, in parsing
+    readings, comments, title, author, published_time = text.split('\n')
+ValueError: too many values to unpack (expected 5)

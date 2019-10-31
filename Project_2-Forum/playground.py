@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import calendar
+import sys
 # _tickers = ['600000', '600009']
 # for ticker in _tickers:
 #     ticker = str(ticker)
@@ -20,4 +21,6 @@ import calendar
 # prices_matrix = prices_matrix.iloc[:, prices_matrix.columns.get_level_values(1) == 'cmo_ret']
 
 
-
+while True:
+    print('Successful!')
+    print(f'Input - {sys.argv[1]}')

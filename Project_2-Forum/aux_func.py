@@ -35,33 +35,46 @@ def extract_excess_returns_to_r():
 
 
 def decompo_pnls(direction='long'):
-    all_pnl = pd.read_csv('C:/Users/andrew.li/Desktop/new_result/'
-                          'individual_pnl_cmc10_ret_0.csv', index_col=0, parse_dates=True)
-    if direction == 'long':
-        average_pnl = all_pnl['Total'] + 1
-    else:
-        average_pnl = 1 - all_pnl['Total']
-    average_pnl = average_pnl.cumprod()
-    final_pnl = average_pnl[-1] - 1
-    all_pnl = all_pnl.drop('Total', axis=True)
-
-    all_pnl = all_pnl.apply(lambda x: x / np.count_nonzero(x), axis=1)
-
-    for ticker in all_pnl.columns:
+    jq.auth('18810906018', '906018')
+    for idx in [10]:
+        all_pnl = pd.read_csv(f'C:/Users/andrew.li/Desktop/decomp/'
+                              f'individual_pnl_cmc{idx}_ret_0.csv', index_col=0, parse_dates=True)
+        all_pnl = all_pnl.drop('Total', axis=True)
+        all_pnl['Total'] = all_pnl.apply(lambda row: np.mean(row.replace(0, np.nan)), axis=1)
         if direction == 'long':
-            curr_df = all_pnl.loc[:, ticker] + 1
+            average_pnl = all_pnl['Total'] + 1
         else:
-            curr_df = 1 - all_pnl.loc[:, ticker]
+            average_pnl = 1 - all_pnl['Total']
+        average_pnl = average_pnl.cumprod()
+        final_pnl = average_pnl[-1] - 1
+        all_pnl = all_pnl.drop('Total', axis=True)
 
-        curr_df = curr_df.cumprod()
-        ticker_pnl = curr_df[-1] - 1
+        all_pnl = all_pnl.apply(lambda x: x / np.count_nonzero(x), axis=1)
 
-        try:
-            all_percent_df = pd.concat([all_percent_df, pd.Series([ticker_pnl/ final_pnl], name=ticker)], axis=1)
-        except:
-            all_percent_df = pd.Series([ticker_pnl / final_pnl], name=ticker)
+        for ticker in all_pnl.columns:
+            if direction == 'long':
+                curr_df = all_pnl.loc[:, ticker]
+            else:
+                curr_df = - all_pnl.loc[:, ticker]
+                curr_df = curr_df * average_pnl.shift(1)
+            curr_df = curr_df + 1
+            curr_df = curr_df.cumprod()
+            ticker_pnl = curr_df[-1] - 1
+            try:
+                all_percent_df = pd.concat([all_percent_df, pd.Series([ticker_pnl/ final_pnl], name=ticker)], axis=1)
+            except:
+                all_percent_df = pd.Series([ticker_pnl / final_pnl], name=ticker)
+        all_percent_df = all_percent_df.T
+        all_percent_df.columns = ['percentage']
+        all_percent_df = all_percent_df.sort_values(by='percentage', ascending=False)
 
-    all_percent_df.to_csv('C:/Users/andrew.li/Desktop/pnl_contribution.csv')
+        valid_tickers = jq.normalize_code(all_percent_df.index.values.tolist())
+        q = jq.query(jq.valuation.code, jq.valuation.market_cap).filter(jq.valuation.code.in_(valid_tickers))
+        market_cap = jq.get_fundamentals(q, '2019-07-31')
+        market_cap.index = market_cap['code'].apply(lambda row: row.split('.')[0])
+        market_cap.drop('code', axis=1, inplace=True)
+        all_percent_df = pd.concat([all_percent_df, market_cap], axis=1, sort=False)
+        all_percent_df.to_csv(f'C:/Users/andrew.li/Desktop/decomp/pnl_contribution_{idx}.csv')
 
 
 def download_members():

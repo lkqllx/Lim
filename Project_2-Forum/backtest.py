@@ -258,8 +258,8 @@ class CrossSignal:
         curr_post_matrix = deepcopy(stocks_post_matrix)
         daily_post_rank_matrix = curr_post_matrix.rank(1, method='first', ascending=True)
 
-        rank_max = (daily_post_rank_matrix.max(axis=1) * self.decile * 0.1).round(0)  # The place to change percentage
-        rank_min = (daily_post_rank_matrix.max(axis=1) * (self.decile - 1) * 0.1).round(0)
+        rank_max = (daily_post_rank_matrix.max(axis=1) * self.decile * 0.05).round(0)  # The place to change percentage
+        rank_min = (daily_post_rank_matrix.max(axis=1) * (self.decile - 1) * 0.05).round(0)
         daily_post_rank_matrix = daily_post_rank_matrix.gt(rank_min, axis=0) & \
                                  daily_post_rank_matrix.le(rank_max, axis=0)
 
@@ -274,9 +274,30 @@ class CrossSignal:
         constrains.fillna(False, inplace=True)
         # At here, True: buy False: No position
         # whether_to_buy_matrix = daily_post_rank_matrix | daily_post_change_rank_matrix
-        whether_to_buy_matrix = daily_post_rank_matrix & constrains
+        whether_to_buy_matrix = daily_post_rank_matrix
 
         weights = whether_to_buy_matrix.apply(lambda row: row / 1, axis=1)  # return 1 means buy and 0 to sell
+        return weights
+
+    def equal_weight_decile_long_short(self):
+        stocks_post_matrix = self.stocks_post_matrix
+        curr_post_matrix = deepcopy(stocks_post_matrix)
+        daily_post_rank_matrix = curr_post_matrix.rank(1, method='first', ascending=True)
+
+        rank_max = (daily_post_rank_matrix.max(axis=1) * 1 * 0.1).round(0)  # The place to change percentage
+        rank_min = (daily_post_rank_matrix.max(axis=1) * (1 - 1) * 0.1).round(0)
+        long_daily_post_rank_matrix = daily_post_rank_matrix.gt(rank_min, axis=0) & \
+                                 daily_post_rank_matrix.le(rank_max, axis=0)
+        long_weights = long_daily_post_rank_matrix.apply(lambda row: row / 1, axis=1)
+
+        rank_max = (daily_post_rank_matrix.max(axis=1) * 10 * 0.1).round(0)  # The place to change percentage
+        rank_min = (daily_post_rank_matrix.max(axis=1) * (10 - 1) * 0.1).round(0)
+        short_daily_post_rank_matrix = daily_post_rank_matrix.gt(rank_min, axis=0) & \
+                                 daily_post_rank_matrix.le(rank_max, axis=0)
+
+        short_weights = short_daily_post_rank_matrix.apply(lambda row: row / 1, axis=1)
+        weights = long_weights - short_weights
+
         return weights
 
 
@@ -287,7 +308,7 @@ class CrossSignal:
         rolling_mean = prices_matrix.rolling(window=20, min_periods=1, axis=0).mean()
         difference_matrix = (prices_matrix - rolling_mean).shift(1).fillna(False)
         stocks_std = difference_matrix.std()
-        signal_matrix = difference_matrix.apply(lambda row: row >= 0, axis=1)
+        signal_matrix = difference_matrix.apply(lambda row: row >= stocks_std, axis=1)
         return signal_matrix
 
 
@@ -498,7 +519,7 @@ class Backtest:
                 if not first_time_flag:
                     if (trading_date_count - start_date) % interval == 0:
                         self.update_inventory(today_signals, today_tradability)
-                        cost = self.cal_daily_transaction_cost(self.yesterday_inventory, today_position)
+                        cost = self.cal_daily_transaction_cost(np.abs(self.yesterday_inventory), np.abs(today_position))
 
                 total_ret = (today_rets * today_position)
                 total_ret = total_ret.dropna()
@@ -529,8 +550,11 @@ class Backtest:
     @staticmethod
     def cal_daily_transaction_cost(next_pos, today_pos):
         sum_pos = np.sum(today_pos)
+        next_sum_pos = np.sum(next_pos)
         if sum_pos != 0:
             turnover = np.sum(np.abs(next_pos - today_pos))/np.sum(today_pos)
+        elif (next_sum_pos == 0) and (sum_pos == 0):
+            turnover = 0
         else:
             turnover = 1
         return 0.001 * turnover
@@ -651,34 +675,30 @@ def run_backtest():
     except IndexError:
         modes = ['cmc10_ret']
 
-
-    # bs = Backtest(cs.equal_weight_rank_signal, start=start, end=end)
+    # cs = CrossSignal(start=start, end=end)
+    # bs = Backtest(cs.equal_weight_decile_long_short(), start=start, end=end,
+    #               path=f'data/params_long_short/')
     # for mode in modes:
     #     interval = int(re.findall('cmc([0-9]+).+', mode)[0])
-    #     for start in range(interval):
-    #         bs.simulate_one_portfolio(start_date=start, interval=interval)
-    #     pd.concat(bs.different_start_daily_returns, axis=1)\
-    #         .to_csv(f'data/interim/aggregate_protfolios/{mode}_all.csv')
-    #     pd.concat(bs.different_start_daily_returns_transac, axis=1)\
-    #         .to_csv(f'data/interim/aggregate_protfolios/'f'{mode}_all_transac.csv')
-    #     bs.different_start_daily_returns = []
-    #     bs.different_start_daily_returns_transac = []
-        # bs.cal_turnover()
-    for counting in range(1, 11):
-        for decile in range(1, 11):
+    #     bs.simulate_one_portfolio(start_date=0, interval=interval)
+
+    for counting in [1, 5, 10]:
+        for decile in range(19, 0, -2):
     # for decile in [1]:
     #     for counting in [10]:
             print('*' * 40)
-            print(' ' * 9, f'Decile {decile} - Counting {counting}')
+            print(' ' * 9, f'Decile {round(decile/2, 1)} - Counting {counting}')
             print('*' * 40)
-            if not os.path.exists(f'data/params_top_rank_constraints/Decile {decile} - Counting {counting}'):
-                os.mkdir(f'data/params_top_rank_constraints/Decile {decile} - Counting {counting}')
+            decile = round(decile/2, 1)
+            if not os.path.exists(f'data/params_top_rank_20/Decile {decile} - Counting {counting}'):
+                os.mkdir(f'data/params_top_rank_20/Decile {decile} - Counting {counting}')
             cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile)
             bs = Backtest(cs.equal_weight_rank_signal(), start=start, end=end,
-                          path=f'data/params_top_rank_constraints/Decile {decile} - Counting {counting}')
+                          path=f'data/params_top_rank_20/Decile {decile} - Counting {counting}')
             for mode in modes:
                 interval = int(re.findall('cmc([0-9]+).+', mode)[0])
                 bs.simulate_one_portfolio(start_date=0, interval=interval)
+
 
 if __name__ == '__main__':
     run_backtest()

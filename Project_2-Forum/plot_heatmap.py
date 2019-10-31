@@ -21,7 +21,8 @@ def plot(path, method, direction, signal):
             for dir_path in dirs:
                 if re.match('Decile.+Counting.+', dir_path):
                     """For different folders"""
-                    decile, count = re.findall('Decile ([\d]+) - Counting ([\d]+)', dir_path)[0]
+                    decile, count = re.findall('Decile ([\d.]+) - Counting ([\d]+)', dir_path)[0]
+                    decile = float(decile)
                     for file in os.listdir(os.path.join(root, dir_path)):
                         if re.match('cmc.+csv', file):
                             """For different files"""
@@ -51,9 +52,11 @@ def plot(path, method, direction, signal):
 
                             holding = file.split('_')[0]
                             try:
-                                all_pnls[holding].append((int(decile) - 1, int(count) - 1, cum_pnl))
+                                all_pnls[holding].append((int(decile * 2) - 1, int(count) - 1, cum_pnl))
+                                # all_pnls[holding].append((int(decile) - 1, int(count) - 1, cum_pnl))
                             except:
-                                all_pnls[holding] = [(int(decile) - 1, int(count) - 1, cum_pnl)]
+                                all_pnls[holding] = [(int(decile * 2) - 1, int(count) - 1, cum_pnl)]
+                                # all_pnls[holding] = [(int(decile) - 1, int(count) - 1, cum_pnl)]
     heatmap(all_pnls, method, direction, signal)
 
 
@@ -62,9 +65,11 @@ def heatmap(all_pnls, method, direction, signal):
     all_pnls = sorted(all_pnls.items(), key=lambda x: int(re.findall('cmc([\d]+)', x[0])[0]))
     for key, value in all_pnls:
         hm = HeatMap(init_opts=opts.InitOpts(page_title=f'', width='1200px', height='800px',))
-        hm.add_xaxis(list(range(1, 11)))
+        hm.add_xaxis(np.linspace(1, 20, 20))
+        # hm.add_xaxis(list(range(1, 11)))
         hm.add_yaxis(f'{key.upper()}',
-                     yaxis_data=list(range(1, 11)),
+                     yaxis_data=list(range(1, 4)),
+                     # yaxis_data=list(range(1, 11)),
                      value=value,
                     label_opts=opts.LabelOpts(is_show=True,
                                               color="#000",
