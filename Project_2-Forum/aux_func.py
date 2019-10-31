@@ -33,9 +33,13 @@ def extract_excess_returns_to_r():
         curr_df.to_csv(f'R/excess_ret/{target_year}.csv')
 
 
-def decompo_pnls():
-    all_pnl = pd.read_csv('C:/Users/andrew.li/Desktop/individual_pnl_cmc10_ret_0.csv', index_col=0, parse_dates=True)
-    average_pnl = all_pnl['Total'] + 1
+def decompo_pnls(direction='long'):
+    all_pnl = pd.read_csv('C:/Users/andrew.li/Desktop/new_result/'
+                          'individual_pnl_cmc10_ret_0.csv', index_col=0, parse_dates=True)
+    if direction == 'long':
+        average_pnl = all_pnl['Total'] + 1
+    else:
+        average_pnl = 1 - all_pnl['Total']
     average_pnl = average_pnl.cumprod()
     final_pnl = average_pnl[-1] - 1
     all_pnl = all_pnl.drop('Total', axis=True)
@@ -43,7 +47,11 @@ def decompo_pnls():
     all_pnl = all_pnl.apply(lambda x: x / np.count_nonzero(x), axis=1)
 
     for ticker in all_pnl.columns:
-        curr_df = all_pnl.loc[:, ticker] + 1
+        if direction == 'long':
+            curr_df = all_pnl.loc[:, ticker] + 1
+        else:
+            curr_df = 1 - all_pnl.loc[:, ticker]
+
         curr_df = curr_df.cumprod()
         ticker_pnl = curr_df[-1] - 1
 
@@ -100,4 +108,5 @@ if __name__ == '__main__':
     # extract_excess_returns_to_r()
     # download_members()
     # download_prices_from_jq()
-    check_members()
+    # check_members()
+    decompo_pnls('short')
