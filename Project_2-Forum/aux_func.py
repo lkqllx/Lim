@@ -30,6 +30,7 @@ def extract_excess_returns_to_r():
     targets = ['2015', '2016', '2017', '2018', '2019']
     for target_year in targets:
         curr_df = all_excess[all_excess['Time'] == target_year]
+        curr_df.drop('Time', axis=1)
         curr_df.to_csv(f'R/excess_ret/{target_year}.csv')
 
 
