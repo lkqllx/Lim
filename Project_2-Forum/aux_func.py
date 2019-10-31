@@ -35,9 +35,9 @@ def extract_excess_returns_to_r():
 
 
 def decompo_pnls(direction='long'):
-    jq.auth('18810906018', '906018')
+    # jq.auth('18810906018', '906018')
     for idx in [10]:
-        all_pnl = pd.read_csv(f'C:/Users/andrew.li/Desktop/decomp/'
+        all_pnl = pd.read_csv(f'~/Desktop/decomp/'
                               f'individual_pnl_cmc{idx}_ret_0.csv', index_col=0, parse_dates=True)
         all_pnl = all_pnl.drop('Total', axis=True)
         all_pnl['Total'] = all_pnl.apply(lambda row: np.mean(row.replace(0, np.nan)), axis=1)
@@ -78,7 +78,7 @@ def decompo_pnls(direction='long'):
 
 
 def download_members():
-    jq.auth('18810906018', '906018')
+    # jq.auth('18810906018', '906018')
     all_ticker = []
     dates = [dt.datetime.strptime('2015-01-01', '%Y-%m-%d') + dt.timedelta(31*idx) for idx in range(58)]
     with Bar('Processing', max=len(dates)) as bar:
@@ -90,8 +90,9 @@ def download_members():
     with open('data/all_list.pkl', 'wb') as f:
         pickle.dump(all_ticker, f)
 
+
 def download_prices_from_jq():
-    jq.auth('18810906018', '906018')
+    # jq.auth('18810906018', '906018')
     with open('data/all_list.pkl', 'rb') as f:
         csi300 = pickle.load(f)
     csi300 = [ticker.split('.')[0] for ticker in csi300]
@@ -109,7 +110,7 @@ def download_prices_from_jq():
 
 
 def check_members():
-    jq.auth('18810906018', '906018')
+    # jq.auth('18810906018', '906018')
     dates = ['2015-01-31', '2016-01-31', '2017-01-31', '2018-01-31', '2019-01-31']
     with Bar('Processing', max=len(dates)) as bar:
         for date in dates:
@@ -118,9 +119,67 @@ def check_members():
             pd.DataFrame(curr_tickers).to_csv(f'~/Desktop/new_result/{date}.csv', index=False)
 
 
+def create_caps():
+    with open('data/all_list.pkl', 'rb') as f:
+        all_list = pickle.load(f)
+    all_list = list(all_list)
+    all_list = sorted(all_list, key=lambda x: int(x.split('.')[0]))
+    with Bar('Downloading', max=len(all_list)) as bar:
+        for ticker in all_list:
+            bar.next()
+            q = jq.query(jq.valuation.circulating_market_cap,jq.valuation.market_cap
+                         ).filter(jq.valuation.code.in_([ticker]))
+            panel = jq.get_fundamentals_continuously(q, end_date='2019-07-31',
+                                                     count=1116)
+            try:
+                market_caps = pd.concat([market_caps, panel.market_cap], axis=1, sort=True)
+                circulating_market_caps = pd.concat([circulating_market_caps, panel.circulating_market_cap], axis=1,
+                                                    sort=True)
+            except:
+                market_caps = panel.market_cap
+                circulating_market_caps = panel.circulating_market_cap
+    market_caps.columns = [name.split('.')[0] for name in market_caps.columns]
+    market_caps.to_csv('data/fundamental/market_caps.csv')
+    circulating_market_caps.columns = [name.split('.')[0] for name in circulating_market_caps.columns]
+    circulating_market_caps.to_csv('data/fundamental/circulating_market_caps.csv')
+
+def masking_caps():
+    market_caps = pd.read_csv('data/fundamental/market_caps.csv', index_col=0, parse_dates=True)
+    circulating_market_caps = pd.read_csv('data/fundamental/circulating_market_caps.csv', index_col=0, parse_dates=True)
+
+    effective_dates = ['31-07-2019', '17-06-2019', '17-12-2018', '11-06-2018', '11-12-2017', '12-06-2017',
+                       '12-12-2016', '13-06-2016', '30-12-2015', '30-11-2015', '15-06-2015', '14-05-2015',
+                       '26-01-2015', '01-01-2015']
+    effective_dates = list(map(dt.datetime.strptime, effective_dates, ['%d-%m-%Y'] * len(effective_dates)))
+    effective_dates.reverse()
+
+    """This mask matrix will be used to multiply with stocks_post_matrix"""
+    mask_matrix = pd.DataFrame(np.nan, index=market_caps.index, columns=market_caps.columns)
+
+    with Bar('Masking', max=len(effective_dates)) as bar:
+        for idx, date in enumerate(effective_dates):
+            bar.next()
+            curr_stocks = jq.get_index_stocks('000300.XSHG', date)
+            curr_stocks = [stock.split('.')[0] for stock in curr_stocks]
+            if idx != len(effective_dates) - 1:
+                """if not last date, we will assign 1 to available stocks until the Previous 
+                day of next next effective day"""
+                mask_matrix.loc[date:effective_dates[idx + 1] - dt.timedelta(1), curr_stocks] = 1
+            else:
+                mask_matrix.loc[effective_dates[idx], curr_stocks] = 1
+    market_caps = market_caps.fillna(0)
+    market_caps = mask_matrix * market_caps
+    circulating_market_caps = circulating_market_caps.fillna(0)
+    circulating_market_caps = mask_matrix * circulating_market_caps
+    market_caps.to_csv('data/fundamental/market_caps.csv')
+    circulating_market_caps.to_csv('data/fundamental/circulating_market_caps.csv')
+
 if __name__ == '__main__':
+    jq.auth('18810906018', '906018')
     # extract_excess_returns_to_r()
     # download_members()
     # download_prices_from_jq()
     # check_members()
-    decompo_pnls('short')
+    # decompo_pnls('short')
+    # create_caps()
+    masking_caps()
