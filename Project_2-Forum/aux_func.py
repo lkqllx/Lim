@@ -7,7 +7,8 @@ from progress.bar import Bar
 import numpy as np
 import jqdatasdk as jq
 import pickle, os, re, calendar
-
+from snownlp import SnowNLP
+import multiprocessing as mp
 
 def process_rds_to_csv():
     tickers = pd.read_excel('data/target_list/csi300.xls').iloc[:, 4].values.tolist()
@@ -34,47 +35,46 @@ def extract_excess_returns_to_r():
         curr_df.to_csv(f'R/excess_ret/{target_year}.csv')
 
 
-def decompo_pnls(direction='long'):
+def decompo_pnls(file, direction='long'):
     # jq.auth('18810906018', '906018')
-    for idx in [10]:
-        all_pnl = pd.read_csv(f'~/Desktop/decomp/'
-                              f'individual_pnl_cmc{idx}_ret_0.csv', index_col=0, parse_dates=True)
-        all_pnl = all_pnl.drop('Total', axis=True)
-        all_pnl['Total'] = all_pnl.apply(lambda row: np.mean(row.replace(0, np.nan)), axis=1)
+    all_pnl = pd.read_csv(file, index_col=0, parse_dates=True)
+    all_pnl = all_pnl.drop('Total', axis=True)
+    all_pnl['Total'] = all_pnl.apply(lambda row: np.mean(row.replace(0, np.nan)), axis=1)
+    if direction == 'long':
+        average_pnl = all_pnl['Total'] + 1
+    else:
+        average_pnl = 1 - all_pnl['Total']
+    average_pnl = average_pnl.cumprod()
+    final_pnl = average_pnl[-1] - 1
+    all_pnl = all_pnl.drop('Total', axis=True)
+
+    all_pnl = all_pnl.apply(lambda x: x / np.count_nonzero(x), axis=1)
+
+    for ticker in all_pnl.columns:
         if direction == 'long':
-            average_pnl = all_pnl['Total'] + 1
+            curr_df = all_pnl.loc[:, ticker]
         else:
-            average_pnl = 1 - all_pnl['Total']
-        average_pnl = average_pnl.cumprod()
-        final_pnl = average_pnl[-1] - 1
-        all_pnl = all_pnl.drop('Total', axis=True)
+            curr_df = - all_pnl.loc[:, ticker]
+            curr_df = curr_df * average_pnl.shift(1)
+        curr_df = curr_df + 1
+        curr_df = curr_df.cumprod()
+        ticker_pnl = curr_df[-1] - 1
+        try:
+            all_percent_df = pd.concat([all_percent_df, pd.Series([ticker_pnl/ final_pnl], name=ticker)], axis=1)
+        except:
+            all_percent_df = pd.Series([ticker_pnl / final_pnl], name=ticker)
+    all_percent_df = all_percent_df.T
+    all_percent_df.columns = ['percentage']
+    all_percent_df = all_percent_df.sort_values(by='percentage', ascending=False)
+    all_percent_df = all_percent_df / all_percent_df.sum()
 
-        all_pnl = all_pnl.apply(lambda x: x / np.count_nonzero(x), axis=1)
-
-        for ticker in all_pnl.columns:
-            if direction == 'long':
-                curr_df = all_pnl.loc[:, ticker]
-            else:
-                curr_df = - all_pnl.loc[:, ticker]
-                curr_df = curr_df * average_pnl.shift(1)
-            curr_df = curr_df + 1
-            curr_df = curr_df.cumprod()
-            ticker_pnl = curr_df[-1] - 1
-            try:
-                all_percent_df = pd.concat([all_percent_df, pd.Series([ticker_pnl/ final_pnl], name=ticker)], axis=1)
-            except:
-                all_percent_df = pd.Series([ticker_pnl / final_pnl], name=ticker)
-        all_percent_df = all_percent_df.T
-        all_percent_df.columns = ['percentage']
-        all_percent_df = all_percent_df.sort_values(by='percentage', ascending=False)
-
-        valid_tickers = jq.normalize_code(all_percent_df.index.values.tolist())
-        q = jq.query(jq.valuation.code, jq.valuation.market_cap).filter(jq.valuation.code.in_(valid_tickers))
-        market_cap = jq.get_fundamentals(q, '2019-07-31')
-        market_cap.index = market_cap['code'].apply(lambda row: row.split('.')[0])
-        market_cap.drop('code', axis=1, inplace=True)
-        all_percent_df = pd.concat([all_percent_df, market_cap], axis=1, sort=False)
-        all_percent_df.to_csv(f'C:/Users/andrew.li/Desktop/decomp/pnl_contribution_{idx}.csv')
+    valid_tickers = jq.normalize_code(all_percent_df.index.values.tolist())
+    q = jq.query(jq.valuation.code, jq.valuation.market_cap).filter(jq.valuation.code.in_(valid_tickers))
+    market_cap = jq.get_fundamentals(q, '2019-07-31')
+    market_cap.index = market_cap['code'].apply(lambda row: row.split('.')[0])
+    market_cap.drop('code', axis=1, inplace=True)
+    all_percent_df = pd.concat([all_percent_df, market_cap], axis=1, sort=False)
+    all_percent_df.to_csv(f'C:/Users/andrew.li/Desktop/result/large and mid cap/pnl_contribution_15_{direction}.csv')
 
 
 def download_members():
@@ -174,12 +174,33 @@ def masking_caps():
     market_caps.to_csv('data/fundamental/market_caps.csv')
     circulating_market_caps.to_csv('data/fundamental/circulating_market_caps.csv')
 
+def run_by_mp(file):
+    df = pd.read_csv(f'data/historical/2019-10-15/{file}', low_memory=False)
+    df['sentiment'] = 0.5
+    for idx, text in enumerate(df['Title']):
+        try:
+            df.loc[idx, 'sentiment'] = SnowNLP(text).sentiments
+        except:
+            continue
+    df.to_csv(f'data/historical/sentiment/{file}', encoding='utf_8_sig', index=False)
+
+def add_sentiment_to_posts():
+    files = os.listdir('data/historical/2019-10-15/')
+    files = [file for file in files if re.match('.+[csv]', file)]
+    pool = mp.Pool(8)
+    with Bar('Processing', max=len(files)) as bar:
+        for _ in pool.imap_unordered(run_by_mp, files):
+            bar.next()
+
+
+
 if __name__ == '__main__':
-    jq.auth('18810906018', '906018')
+    # jq.auth('18810906018', '906018')
     # extract_excess_returns_to_r()
     # download_members()
     # download_prices_from_jq()
     # check_members()
-    # decompo_pnls('short')
+    # decompo_pnls(f'~/Desktop/result/large and mid cap/individual_pnl_cmc15_ret_0.csv', 'long')
     # create_caps()
-    masking_caps()
+    # masking_caps()
+    add_sentiment_to_posts()

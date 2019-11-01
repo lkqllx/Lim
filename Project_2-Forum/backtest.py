@@ -274,7 +274,7 @@ class CrossSignal:
         constraints.fillna(False, inplace=True)
         # At here, True: buy False: No position
         # whether_to_buy_matrix = daily_post_rank_matrix | daily_post_change_rank_matrix
-        whether_to_buy_matrix = daily_post_rank_matrix | constraints
+        whether_to_buy_matrix = daily_post_rank_matrix & constraints
 
         weights = whether_to_buy_matrix.apply(lambda row: row / 1, axis=1)  # return 1 means buy and 0 to sell
         return weights
@@ -310,9 +310,9 @@ class CrossSignal:
             signal_matrix = difference_matrix.apply(lambda row: row >= stocks_std, axis=1)
         elif constraint_type == 'CAP':
             cap_matrix = pd.read_csv('data/fundamental/market_caps.csv', index_col=0, parse_dates=True)
-            cap_matrix = cap_matrix[(cap_matrix.index >= self._start) & (cap_matrix <= self._end)]
+            cap_matrix = cap_matrix[(cap_matrix.index >= self._start) & (cap_matrix.index <= self._end)]
             quantile = cap_matrix.quantile(0.33, axis=1)
-            signal_matrix = cap_matrix.gt(quantile, axis=0)
+            signal_matrix = cap_matrix.ge(quantile, axis=0)
         return signal_matrix
 
 
@@ -655,13 +655,6 @@ class Backtest:
         print(f'{self._ret_type}s turnover is {ave_turnover}')
 
 
-def sentiment(texts: str):
-    text = SnowNLP(texts)
-    sents = text.sentences
-    for sen in sents:
-        s = SnowNLP(sen)
-        print(sen, '-', s.sentiments)
-
 
 def run_backtest():
 
@@ -689,16 +682,16 @@ def run_backtest():
     for counting in [1, 5, 10]:
         for decile in range(20, 0, -1):
     # for decile in [1]:
-    #     for counting in [10]:
+    #     for counting in [5]:
             print('*' * 40)
             print(' ' * 9, f'Decile {round(decile/2, 1)} - Counting {counting}')
             print('*' * 40)
             decile = round(decile/2, 1)
-            if not os.path.exists(f'data/params_top_rank_20/Decile {decile} - Counting {counting}'):
-                os.mkdir(f'data/params_top_rank_20/Decile {decile} - Counting {counting}')
+            if not os.path.exists(f'data/params_top_rank_constraints/Decile {decile} - Counting {counting}'):
+                os.mkdir(f'data/params_top_rank_constraints/Decile {decile} - Counting {counting}')
             cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile)
             bs = Backtest(cs.equal_weight_rank_signal(), start=start, end=end,
-                          path=f'data/params_top_rank_20/Decile {decile} - Counting {counting}')
+                          path=f'data/params_top_rank_constraints/Decile {decile} - Counting {counting}')
             for mode in modes:
                 interval = int(re.findall('cmc([0-9]+).+', mode)[0])
                 bs.simulate_one_portfolio(start_date=0, interval=interval)
@@ -707,10 +700,3 @@ def run_backtest():
 if __name__ == '__main__':
     run_backtest()
 
-    # df = pd.read_csv(f'/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/'
-    #                  f'Project_2-Forum/data/historical/2019-10-15/{600010}.csv')
-    # real_text = df.loc[:20, 'Title'].values.tolist()
-    # text = '快买这个股票，这个股票一定能够大涨，这个不是太好用，' \
-    #        '超级垃圾股票，绝对的优质股票，买这股票就是去送钱，一定亏钱的，这个股票不太好可能亏钱'
-    # sentiment(texts=text)
-    # sentiment('，'.join(real_text))
