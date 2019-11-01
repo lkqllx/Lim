@@ -269,12 +269,12 @@ class CrossSignal:
         daily_post_change_rank_matrix = daily_post_change_rank_matrix.gt(change_rank_min, axis=0) & \
                                         daily_post_change_rank_matrix.le(change_rank_max, axis=0)
 
-        constrains = self.constrains()
-        constrains = pd.concat([pd.DataFrame(index=daily_post_rank_matrix.index), constrains], axis=1)
-        constrains.fillna(False, inplace=True)
+        constraints = self.constraints('CAP')
+        constraints = pd.concat([pd.DataFrame(index=daily_post_rank_matrix.index), constraints], axis=1)
+        constraints.fillna(False, inplace=True)
         # At here, True: buy False: No position
         # whether_to_buy_matrix = daily_post_rank_matrix | daily_post_change_rank_matrix
-        whether_to_buy_matrix = daily_post_rank_matrix
+        whether_to_buy_matrix = daily_post_rank_matrix | constraints
 
         weights = whether_to_buy_matrix.apply(lambda row: row / 1, axis=1)  # return 1 means buy and 0 to sell
         return weights
@@ -297,18 +297,22 @@ class CrossSignal:
 
         short_weights = short_daily_post_rank_matrix.apply(lambda row: row / 1, axis=1)
         weights = long_weights - short_weights
-
         return weights
 
-
-    def constrains(self):
-        prices_matrix = pd.read_csv('data/interim/prices_matrix.csv', index_col=0, parse_dates=True, header=[0, 1])
-        prices_matrix = prices_matrix.loc[:, prices_matrix.columns.get_level_values(1) == 'close']
-        prices_matrix.columns = prices_matrix.columns.get_level_values(0)
-        rolling_mean = prices_matrix.rolling(window=20, min_periods=1, axis=0).mean()
-        difference_matrix = (prices_matrix - rolling_mean).shift(1).fillna(False)
-        stocks_std = difference_matrix.std()
-        signal_matrix = difference_matrix.apply(lambda row: row >= stocks_std, axis=1)
+    def constraints(self, constraint_type):
+        if constraint_type == 'MA':
+            prices_matrix = pd.read_csv('data/interim/prices_matrix.csv', index_col=0, parse_dates=True, header=[0, 1])
+            prices_matrix = prices_matrix.loc[:, prices_matrix.columns.get_level_values(1) == 'close']
+            prices_matrix.columns = prices_matrix.columns.get_level_values(0)
+            rolling_mean = prices_matrix.rolling(window=20, min_periods=1, axis=0).mean()
+            difference_matrix = (prices_matrix - rolling_mean).shift(1).fillna(False)
+            stocks_std = difference_matrix.std()
+            signal_matrix = difference_matrix.apply(lambda row: row >= stocks_std, axis=1)
+        elif constraint_type == 'CAP':
+            cap_matrix = pd.read_csv('data/fundamental/market_caps.csv', index_col=0, parse_dates=True)
+            cap_matrix = cap_matrix[(cap_matrix.index >= self._start) & (cap_matrix <= self._end)]
+            quantile = cap_matrix.quantile(0.33, axis=1)
+            signal_matrix = cap_matrix.gt(quantile, axis=0)
         return signal_matrix
 
 
@@ -683,7 +687,7 @@ def run_backtest():
     #     bs.simulate_one_portfolio(start_date=0, interval=interval)
 
     for counting in [1, 5, 10]:
-        for decile in range(19, 0, -2):
+        for decile in range(20, 0, -1):
     # for decile in [1]:
     #     for counting in [10]:
             print('*' * 40)
