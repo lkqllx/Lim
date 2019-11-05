@@ -14,14 +14,17 @@ def plot(path, method, direction, signal):
     # csi300_close = csi300_close.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
     # csi300_close_ret = (csi300_close - csi300_close.shift(-1)) / csi300_close.shift(-1)
 
-    csi300 = pd.read_csv('data/target_list/bm_lm_cap.csv', index_col=0, parse_dates=True)
-    csi300_close = csi300['Price']
-    csi300_close_ret = (csi300_close - csi300_close.shift(1)) / csi300_close.shift(1)
+    # csi300 = pd.read_csv('data/target_list/bm_lm_cap.csv', index_col=0, parse_dates=True)
+    # csi300_close = csi300['Price']
+    # csi300_close_ret = (csi300_close - csi300_close.shift(1)) / csi300_close.shift(1)
+
+    csi300_close_ret = pd.read_csv('data/interim/equal_weight_benchmark.csv',
+                                   index_col=0, parse_dates=True).iloc[:,0]
 
     csi300_close_ret.name = f'CSI300_cmc1'
-    count_dict = {'1':1, '5':2, '10':3}
+    # count_dict = {'1':1, '5':2, '10':3}
     all_pnls = {}
-    with Bar('Computing PnLs', max=420) as bar:
+    with Bar('Computing PnLs', max=700) as bar:
         for root, dirs, files in os.walk(path):
             for dir_path in dirs:
                 if re.match('Decile.+Counting.+', dir_path):
@@ -57,11 +60,11 @@ def plot(path, method, direction, signal):
 
                             holding = file.split('_')[0]
                             try:
-                                all_pnls[holding].append((int(decile * 2) - 1, int(count_dict[count]) - 1, cum_pnl))
-                                # all_pnls[holding].append((int(decile) - 1, int(count) - 1, cum_pnl))
+                                # all_pnls[holding].append((int(decile * 2) - 1, int(count_dict[count]) - 1, cum_pnl))
+                                all_pnls[holding].append((int(decile) - 1, int(count) - 1, cum_pnl))
                             except:
-                                all_pnls[holding] = [(int(decile * 2) - 1, int(count_dict[count]) - 1, cum_pnl)]
-                                # all_pnls[holding] = [(int(decile) - 1, int(count) - 1, cum_pnl)]
+                                # all_pnls[holding] = [(int(decile * 2) - 1, int(count_dict[count]) - 1, cum_pnl)]
+                                all_pnls[holding] = [(int(decile) - 1, int(count) - 1, cum_pnl)]
     heatmap(all_pnls, method, direction, signal)
 
 
@@ -70,11 +73,11 @@ def heatmap(all_pnls, method, direction, signal):
     all_pnls = sorted(all_pnls.items(), key=lambda x: int(re.findall('cmc([\d]+)', x[0])[0]))
     for key, value in all_pnls:
         hm = HeatMap(init_opts=opts.InitOpts(page_title=f'', width='1200px', height='800px',))
-        hm.add_xaxis([str(idx * 0.5) for idx in range(1, 21)])
-        # hm.add_xaxis(list(range(1, 11)))
+        # hm.add_xaxis([str(idx * 0.5) for idx in range(1, 21)])
+        hm.add_xaxis(list(range(1, 11)))
         hm.add_yaxis(f'{key.upper()}',
-                     yaxis_data=['1', '5', '10'],
-                     # yaxis_data=list(range(1, 11)),
+                     # yaxis_data=['1', '5', '10'],
+                     yaxis_data=list(range(1, 11)),
                      value=value,
                      label_opts=opts.LabelOpts(is_show=True,
                                               color="#000",
@@ -102,7 +105,7 @@ def heatmap(all_pnls, method, direction, signal):
     #         grid.add(hms[idx], grid_opts=opts.GridOpts(pos_right="60%"))
     #         page.add(grid)
     # page.render(path='figs/heatmaps.html')
-    tab = Tab(page_title=f'{method}_heatmaps_{signal}_{direction}'.upper())
+    tab = Tab(page_title=f'{method}_heatmaps_{signal}_.....{direction}'.upper())
     keys, values = list(zip(*all_pnls))
     for key, hm in zip(keys, hms):
         tab.add(hm, key)
@@ -134,12 +137,12 @@ def comp_cum_sharpe(df, benchmark, direction):
 
 if __name__ == '__main__':
     methods = ['pnl', 'sharpe']
-    signals = ['rank']
-    # signals = ['rank', 'change']
+    # signals = ['rank']
+    signals = ['rank', 'change']
     directions = ['long', 'short']
-    combs = list(product(methods, signals, directions))
+    combs = product(methods, signals, directions)
 
     for method, signal, direction in combs:
         print(f'Doing {method} - {signal} - {direction}')
-        path = f'data/params_top_{signal}_constraints_lmCap'
+        path = f'data/params_top_{signal}'
         plot(path, method, direction, signal)

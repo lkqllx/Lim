@@ -192,6 +192,19 @@ def add_sentiment_to_posts():
         for _ in pool.imap_unordered(run_by_mp, files):
             bar.next()
 
+def create_new_benchmark():
+    stock_posts = pd.read_csv('data/interim/weekend_stocks_post_matrix_after_masking.csv',
+                              index_col=0, parse_dates=True)
+    ret_matrix = pd.read_csv('data/interim/ret_matrix.csv',
+                             index_col=0, parse_dates=True)
+
+    valid_returns = ret_matrix[stock_posts.notnull()]
+    mean_returns = valid_returns.mean(axis=1)
+    mean_returns.dropna(inplace=True)
+    mean_returns.to_csv('data/interim/equal_weight_benchmark.csv')
+    # mean_returns = mean_returns + 1
+    # cum_return = mean_returns.cumprod() - 1
+    # cum_return.plot()
 
 
 if __name__ == '__main__':
@@ -203,4 +216,5 @@ if __name__ == '__main__':
     # decompo_pnls(f'~/Desktop/result/large and mid cap/individual_pnl_cmc15_ret_0.csv', 'long')
     # create_caps()
     # masking_caps()
-    add_sentiment_to_posts()
+    # add_sentiment_to_posts()
+    create_new_benchmark()
