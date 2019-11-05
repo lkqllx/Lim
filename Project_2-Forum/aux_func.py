@@ -206,6 +206,19 @@ def create_new_benchmark():
     # cum_return = mean_returns.cumprod() - 1
     # cum_return.plot()
 
+def add_sentiment_label():
+    files = os.listdir('data/historical/sentiment/')
+    files = [file for file in files if re.match('.+[csv]', file)]
+    with Bar('Labelling', max=len(files)) as bar:
+        for file in files:
+            bar.next()
+            curr_df = pd.read_csv('data/historical/sentiment/' + file, index_col=0, low_memory=False)
+            if 'sent_laben' in curr_df.columns:
+                curr_df.columns = curr_df.columns[:-1].values.tolist() + ['sent_label']
+            else:
+                curr_df['sent_label'] = curr_df['sentiment'].apply(lambda x: 0 if x <= 0.5 else 1)
+            curr_df.to_csv('data/historical/sentiment/' + file, encoding='utf_8_sig')
+
 
 if __name__ == '__main__':
     # jq.auth('18810906018', '906018')
@@ -217,4 +230,5 @@ if __name__ == '__main__':
     # create_caps()
     # masking_caps()
     # add_sentiment_to_posts()
-    create_new_benchmark()
+    # create_new_benchmark()
+    add_sentiment_label()
