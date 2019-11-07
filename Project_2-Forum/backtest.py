@@ -109,7 +109,7 @@ class CrossSignal:
     """
 
     def __init__(self, start='2015-01-01', end='2019-07-31', number_of_days_for_averaging=20, signal_period=1,
-                 decile=1):
+                 decile=1, sentiment=None):
         self._start = dt.datetime.strptime(start, '%Y-%m-%d')
         self._end = dt.datetime.strptime(end, '%Y-%m-%d')
         self.date_list = [self._end - dt.timedelta(idx) for idx in range((self._end - self._start).days + 1)]
@@ -117,14 +117,23 @@ class CrossSignal:
         self.number_of_days_for_averaging = number_of_days_for_averaging
         self.signal_period = signal_period
         self.decile = decile
+        self.sentiment = sentiment
         self.preprocess()
 
     def preprocess(self):
         try:
-            self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix_after_masking.csv',
-                                                  index_col=0, parse_dates=True)
+            if self.sentiment is None:
+                self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix_after_masking.csv',
+                                                      index_col=0, parse_dates=True)
+            elif self.sentiment == 'positive':
+                self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix_positive.csv',
+                                                      index_col=0, parse_dates=True)
+            else:
+                self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix_after_masking_negative.csv',
+                                                      index_col=0, parse_dates=True)
+
         except:
-            files = os.listdir('data/historical/2019-10-15')
+            files = os.listdir('data/historical/sentiment')
             files = [file for file in files if re.match('[\d]+.csv', file)]
             files = sorted(files, key=lambda x: int(x.split('.')[0]))
             tickers = [file.split('.')[0] for file in files]
@@ -132,8 +141,14 @@ class CrossSignal:
             with Bar('CrossSignal Preprocessing', max=len(files)) as bar:
                 for ticker, file in zip(tickers, files):
                     bar.next()
-                    df = pd.read_csv(f'data/historical/2019-10-15/{ticker}.csv',
+                    df = pd.read_csv(f'data/historical/sentiment/{ticker}.csv',
                                      index_col=0, parse_dates=True, low_memory=False)
+                    if self.sentiment is None:
+                        pass
+                    elif self.sentiment == 'Positive':
+                        df = df[df['sent_label'] == 1]
+                    else:
+                        df = df[df['sent_label'] == 0]
                     last_date = df.index[-1]
                     df = df.resample('3H').count()
                     df = df[df.index >= last_date]
@@ -161,16 +176,26 @@ class CrossSignal:
                     self.stocks_post_matrix = pd.concat([self.stocks_post_matrix, curr_stock_posts_vec], axis=1)
 
                     # self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
-                    self.create_csi300_mask_matrix()
+                # self.create_csi300_mask_matrix()
+                if self.sentiment is None:
                     self.stocks_post_matrix.to_csv('data/interim/stocks_post_matrix.csv')
 
                     """Handle the weekend posts"""
                     self.add_weekend_posts()
                     self.delete_zeros_weekend()
                     self.stocks_post_matrix.to_csv('data/interim/weekend_stocks_post_matrix.csv')
-                    # self.create_csi300_mask_matrix()
+                    self.create_csi300_mask_matrix()
                     self.stocks_post_matrix.to_csv('data/interim/weekend_stocks_post_matrix_after_masking.csv')
+                else:
+                    self.stocks_post_matrix.to_csv(f'data/interim/stocks_post_matrix_{self.sentiment.lower()}.csv')
 
+                    """Handle the weekend posts"""
+                    self.add_weekend_posts()
+                    self.delete_zeros_weekend()
+                    self.stocks_post_matrix.to_csv(f'data/interim/weekend_stocks_post_matrix_{self.sentiment.lower()}.csv')
+                    self.create_csi300_mask_matrix()
+                    self.stocks_post_matrix.to_csv(f'data/interim/weekend_stocks_post_matrix_'
+                                                   f'after_masking_{self.sentiment.lower()}.csv')
 
     def delete_zeros_weekend(self):
         for col in self.stocks_post_matrix.columns:
@@ -691,7 +716,7 @@ def run_backtest():
             # decile = round(decile/2, 1)
             if not os.path.exists(f'data/params_top_rank/Decile {decile} - Counting {counting}'):
                 os.mkdir(f'data/params_top_rank/Decile {decile} - Counting {counting}')
-            cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile)
+            cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile, sentiment='negative')
             bs = Backtest(cs.equal_weight_rank_signal(), start=start, end=end,
                           path=f'data/params_top_rank/Decile {decile} - Counting {counting}')
             for mode in modes:

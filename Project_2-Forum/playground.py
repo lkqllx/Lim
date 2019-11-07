@@ -10,7 +10,7 @@ import sys
 #     curr_df.index = pd.to_datetime(curr_df.index)
 #     curr_df = curr_df.astype(float)
 #     curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] - curr_df.loc[:, (ticker, 'open')]) / \
-#                                           curr_df.loc[:, (ticker, 'open')]
+#                                           curr_df.loc[:, (ticker, 'open')]...
 #     curr_df.loc[:, (ticker, 'cmc_ret')] = (curr_df.loc[:, (ticker, 'close')] -
 #                                            curr_df.loc[:, (ticker, 'close')].shift(1)) / \
 #                                           curr_df.loc[:, (ticker, 'close')].shift(1)
