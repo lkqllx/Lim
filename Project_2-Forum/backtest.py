@@ -126,7 +126,7 @@ class CrossSignal:
                 self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix_after_masking.csv',
                                                       index_col=0, parse_dates=True)
             elif self.sentiment == 'positive':
-                self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix_positive.csv',
+                self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix_after_masking_positive.csv',
                                                       index_col=0, parse_dates=True)
             else:
                 self.stocks_post_matrix = pd.read_csv('data/interim/weekend_stocks_post_matrix_after_masking_negative.csv',
@@ -145,7 +145,7 @@ class CrossSignal:
                                      index_col=0, parse_dates=True, low_memory=False)
                     if self.sentiment is None:
                         pass
-                    elif self.sentiment == 'Positive':
+                    elif self.sentiment == 'positive':
                         df = df[df['sent_label'] == 1]
                     else:
                         df = df[df['sent_label'] == 0]
@@ -439,7 +439,7 @@ class Backtest:
                         self.prices_matrix = curr_df
 
                 # self.prices_matrix.fillna(0, inplace=True)
-        self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
+        # self.prices_matrix.to_csv('data/interim/prices_matrix.csv')
 
         # Choose the preferred ret
         self.ret_matrix = self.prices_matrix.iloc[:, self.prices_matrix.columns.get_level_values(1) == 'cmc1_ret']
@@ -511,14 +511,14 @@ class Backtest:
         self.reset()
         self._ret_type = f'cmc{interval}_ret'
 
-        self.ret_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
-        self._signal.to_csv('data/interim/signal_matrix.csv')
+        # self.ret_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
+        # self._signal.to_csv('data/interim/signal_matrix.csv')
 
     def simulate_one_portfolio(self, start_date=0, interval=10):
         """Becktesting function for holding one portfolio at a time"""
         self.init_backtest(interval=interval)
         tradability_mat = self.tradability_matrix
-        tradability_mat.to_csv('data/interim/tradability.csv')
+        # tradability_mat.to_csv('data/interim/tradability.csv')
         first_time_flag = True
         with Bar(f'Backtesting {self._ret_type.upper()} - {start_date}', max=self.ret_matrix.shape[0]) as bar:
             for idx, date in enumerate(self.ret_matrix.index):
@@ -602,9 +602,9 @@ class Backtest:
         self.yesterday_inventory = pd.Series(np.repeat(0, self.ret_matrix.shape[1]),
                                              index=self.ret_matrix.columns)
         self._ret_type = ret_type
-        self.ret_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
-        self.tradability_matrix.to_csv('data/interim/tradability.csv')
-        self._signal.to_csv('data/interim/signal_matrix.csv')
+        # self.ret_matrix.round(3).to_csv('data/interim/ret_matrix.csv')
+        # self.tradability_matrix.to_csv('data/interim/tradability.csv')
+        # self._signal.to_csv('data/interim/signal_matrix.csv')
         tradability_mat = self.tradability_matrix
         with Bar(f'Backtesting {self._ret_type.upper()}', max=self.ret_matrix.shape[0]) as bar:
             for idx, date in enumerate(self.ret_matrix.index):
@@ -706,7 +706,7 @@ def run_backtest():
     #     interval = int(re.findall('cmc([0-9]+).+', mode)[0])
     #     bs.simulate_one_portfolio(start_date=0, interval=interval)
 
-    for counting in [1, 5, 10]:
+    for counting in range(1, 11):
         for decile in range(10, 0, -1):
     # for decile in [1]:
     #     for counting in [5]:
@@ -714,11 +714,13 @@ def run_backtest():
             print(' ' * 9, f'Decile {decile} - Counting {counting}')
             print('*' * 40)
             # decile = round(decile/2, 1)
-            if not os.path.exists(f'data/params_top_rank/Decile {decile} - Counting {counting}'):
-                os.mkdir(f'data/params_top_rank/Decile {decile} - Counting {counting}')
+            if not os.path.exists(f'data/params_top_rank_negative/Decile {decile} - Counting {counting}'):
+                os.mkdir(f'data/params_top_rank_negative/Decile {decile} - Counting {counting}')
+
             cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile, sentiment='negative')
+
             bs = Backtest(cs.equal_weight_rank_signal(), start=start, end=end,
-                          path=f'data/params_top_rank/Decile {decile} - Counting {counting}')
+                          path=f'data/params_top_rank_negative/Decile {decile} - Counting {counting}')
             for mode in modes:
                 interval = int(re.findall('cmc([0-9]+).+', mode)[0])
                 bs.simulate_one_portfolio(start_date=0, interval=interval)
