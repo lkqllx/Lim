@@ -156,7 +156,7 @@ class CrossSignal:
 
                     # We need to set hour column to select the period between 9AM:3PM
                     df['Hour'] = df['Time'].apply(lambda x: x.hour)
-                    df.loc[(df['Hour'] < 15) & (df['Hour'] >= 9), 'Title'] = 0
+                    # df.loc[(df['Hour'] < 15) & (df['Hour'] >= 9), 'Title'] = 0
 
                     # Resample with a base = 15 and freq = 24H
                     # Since we have made 9AM-3PM = 0, so we can sum the 24 hour starting from 3PM

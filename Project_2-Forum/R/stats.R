@@ -28,8 +28,8 @@ summ<- function (y){
   return(summt)
 }
 
-pnls = read.csv('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/excess_daily_pnls.csv')
-reads = c('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/excess_daily_pnls.csv',
+# pnls = read.csv('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/excess_return.csv')
+reads = c('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/excess_return.csv',
           '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/2015.csv',
           '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/2016.csv',
           '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/2017.csv',
@@ -59,7 +59,7 @@ for (path_idx in 1:6){
   # colnames(all_stats) <- c('cmc3_ret', 'cmc5_ret', 'cmc10_ret', 'cmc15_ret', 'cmc20_ret', 'cmc30_ret')
 }
 # all_stats <- round(all_stats, 3)
-colnames(all_stats) <- c('cmc15_ret', 'year')
+colnames(all_stats) <- c(colnames(pnls)[2:ncol(pnls)], 'year')
 write.csv(all_stats, writes)
 
 

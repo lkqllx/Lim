@@ -23,15 +23,16 @@ def process_rds_to_csv():
 
 
 def extract_excess_returns_to_r():
-    all_excess = pd.read_csv('R/excess_ret/excess_daily_pnls.csv', index_col=0, parse_dates=True)
-    all_excess = all_excess.iloc[:, list(range(1, all_excess.shape[1], 2))]
-    all_excess.to_csv(f'R/excess_ret/excess_daily_pnls.csv')
+    # all_excess = pd.read_csv('R/excess_ret/excess_daily_pnls.csv', index_col=0, parse_dates=True)
+    # all_excess = all_excess.iloc[:, list(range(1, all_excess.shape[1], 2))]
+    all_excess = pd.read_csv('R/excess_ret/excess_return.csv', index_col=0, parse_dates=True)
+    # all_excess.to_csv(f'R/excess_ret/excess_daily_pnls.csv')
     all_excess['Time'] = all_excess.index.values
     all_excess['Time'] = all_excess['Time'].apply(lambda x: str(x.year))
     targets = ['2015', '2016', '2017', '2018', '2019']
     for target_year in targets:
         curr_df = all_excess[all_excess['Time'] == target_year]
-        curr_df.drop('Time', axis=1)
+        curr_df.drop('Time', axis=1, inplace=True)
         curr_df.to_csv(f'R/excess_ret/{target_year}.csv')
 
 
@@ -222,7 +223,7 @@ def add_sentiment_label():
 
 if __name__ == '__main__':
     # jq.auth('18810906018', '906018')
-    # extract_excess_returns_to_r()
+    extract_excess_returns_to_r()
     # download_members()
     # download_prices_from_jq()
     # check_members()
@@ -231,4 +232,4 @@ if __name__ == '__main__':
     # masking_caps()
     # add_sentiment_to_posts()
     # create_new_benchmark()
-    add_sentiment_label()
+    # add_sentiment_label()
