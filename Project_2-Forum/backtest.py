@@ -150,18 +150,20 @@ class CrossSignal:
                     else:
                         df = df[df['sent_label'] == 0]
                     last_date = df.index[-1]
-                    df = df.resample('3H').count()
-                    df = df[df.index >= last_date]
-                    df.reset_index(inplace=True)
-
-                    # We need to set hour column to select the period between 9AM:3PM
-                    df['Hour'] = df['Time'].apply(lambda x: x.hour)
+                    # df = df.resample('3H').count()
+                    # df = df[df.index >= last_date]
+                    # df.reset_index(inplace=True)
+                    #
+                    # # We need to set hour column to select the period between 9AM:3PM
+                    # df['Hour'] = df['Time'].apply(lambda x: x.hour)
                     # df.loc[(df['Hour'] < 15) & (df['Hour'] >= 9), 'Title'] = 0
 
                     # Resample with a base = 15 and freq = 24H
                     # Since we have made 9AM-3PM = 0, so we can sum the 24 hour starting from 3PM
-                    curr_stock_posts_vec = pd.Series(df['Title'].values, index=df.Time, name=ticker)
-                    curr_stock_posts_vec = curr_stock_posts_vec.groupby(pd.Grouper(freq='24H', base=15)).sum()
+                    # curr_stock_posts_vec = pd.Series(df['Title'].values, index=df.Time, name=ticker)
+                    curr_stock_posts_vec = df.groupby(pd.Grouper(freq='60T', base=30)).count()['Title']
+                    curr_stock_posts_vec.name = ticker
+                    curr_stock_posts_vec = curr_stock_posts_vec.groupby(pd.Grouper(freq='24H', base=14)).sum()
 
                     # This is to make the Hour from 15 to 0AM
                     curr_stock_posts_vec = curr_stock_posts_vec.resample('D').sum()
@@ -252,27 +254,31 @@ class CrossSignal:
     def create_csi300_mask_matrix(self):
         """This function is designed to process the 490 * 490 post matrix to a format that
         each row only contains 300 constituents at that time"""
-        effective_dates = ['31-07-2019','17-06-2019', '17-12-2018', '11-06-2018', '11-12-2017', '12-06-2017',
-                           '12-12-2016', '13-06-2016', '30-12-2015', '30-11-2015', '15-06-2015', '14-05-2015',
-                           '26-01-2015', '01-01-2015']
-        effective_dates = list(map(dt.datetime.strptime, effective_dates, ['%d-%m-%Y'] * len(effective_dates)))
-        effective_dates.reverse()
+        if not os.path.exists('data/interim/masking_matrix.csv'):
+            effective_dates = ['31-07-2019','17-06-2019', '17-12-2018', '11-06-2018', '11-12-2017', '12-06-2017',
+                               '12-12-2016', '13-06-2016', '30-12-2015', '30-11-2015', '15-06-2015', '14-05-2015',
+                               '26-01-2015', '01-01-2015']
+            effective_dates = list(map(dt.datetime.strptime, effective_dates, ['%d-%m-%Y'] * len(effective_dates)))
+            effective_dates.reverse()
 
-        """This mask matrix will be used to multiply with stocks_post_matrix"""
-        mask_matrix = pd.DataFrame(np.nan, index=self.date_list, columns=self.stocks_post_matrix.columns)
+            """This mask matrix will be used to multiply with stocks_post_matrix"""
+            mask_matrix = pd.DataFrame(np.nan, index=self.date_list, columns=self.stocks_post_matrix.columns)
 
-        jq.auth('18810906018', '906018')
-        with Bar('Masking', max=len(effective_dates)) as bar:
-            for idx, date in enumerate(effective_dates):
-                bar.next()
-                curr_stocks = jq.get_index_stocks('000300.XSHG', date)
-                curr_stocks = [stock.split('.')[0] for stock in curr_stocks]
-                if idx != len(effective_dates) - 1:
-                    """if not last date, we will assign 1 to available stocks until the Previous 
-                    day of next next effective day"""
-                    mask_matrix.loc[date:effective_dates[idx+1]-dt.timedelta(1), curr_stocks] = 1
-                else:
-                    mask_matrix.loc[effective_dates[idx], curr_stocks] = 1
+            jq.auth('18810906018', '906018')
+            with Bar('Masking', max=len(effective_dates)) as bar:
+                for idx, date in enumerate(effective_dates):
+                    bar.next()
+                    curr_stocks = jq.get_index_stocks('000300.XSHG', date)
+                    curr_stocks = [stock.split('.')[0] for stock in curr_stocks]
+                    if idx != len(effective_dates) - 1:
+                        """if not last date, we will assign 1 to available stocks until the Previous 
+                        day of next next effective day"""
+                        mask_matrix.loc[date:effective_dates[idx+1]-dt.timedelta(1), curr_stocks] = 1
+                    else:
+                        mask_matrix.loc[effective_dates[idx], curr_stocks] = 1
+            mask_matrix.to_csv('data/interim/masking_matrix.csv')
+        else:
+            mask_matrix = pd.read_csv('data/interim/masking_matrix.csv', index_col=0, parse_dates=True)
         self.stocks_post_matrix = self.stocks_post_matrix.fillna(0)
         self.stocks_post_matrix = mask_matrix * self.stocks_post_matrix
 
@@ -714,17 +720,16 @@ def run_backtest():
             print(' ' * 9, f'Decile {decile} - Counting {counting}')
             print('*' * 40)
             # decile = round(decile/2, 1)
-            if not os.path.exists(f'data/params_top_rank_negative/Decile {decile} - Counting {counting}'):
-                os.mkdir(f'data/params_top_rank_negative/Decile {decile} - Counting {counting}')
+            if not os.path.exists(f'data/params_top_rank_positive_3pm/Decile {decile} - Counting {counting}'):
+                os.mkdir(f'data/params_top_rank_positive_3pm/Decile {decile} - Counting {counting}')
 
-            cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile, sentiment='negative')
+            cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile, sentiment='positive')
 
             bs = Backtest(cs.equal_weight_rank_signal(), start=start, end=end,
-                          path=f'data/params_top_rank_negative/Decile {decile} - Counting {counting}')
+                          path=f'data/params_top_rank_positive_3pm/Decile {decile} - Counting {counting}')
             for mode in modes:
                 interval = int(re.findall('cmc([0-9]+).+', mode)[0])
                 bs.simulate_one_portfolio(start_date=0, interval=interval)
-
 
 if __name__ == '__main__':
     run_backtest()

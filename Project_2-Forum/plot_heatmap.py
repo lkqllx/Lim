@@ -8,7 +8,7 @@ import numpy as np
 from itertools import product
 
 
-def plot(path, method, direction, signal, sentiment):
+def plot(path, method, direction, signal, sentiment, ret_type):
     # csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)
     # csi300_close = csi300['Price']
     # csi300_close = csi300_close.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
@@ -20,7 +20,9 @@ def plot(path, method, direction, signal, sentiment):
 
     csi300_close_ret = pd.read_csv('data/interim/equal_weight_benchmark.csv',
                                    index_col=0, parse_dates=True).iloc[:,0]
-    csi300_close_ret = pd.Series(0, index=csi300_close_ret.index, name=csi300_close_ret.name)
+
+    if ret_type == '_ori':
+        csi300_close_ret = pd.Series(0, index=csi300_close_ret.index, name=csi300_close_ret.name)
 
     csi300_close_ret.name = f'CSI300_cmc1'
     # count_dict = {'1':1, '5':2, '10':3}
@@ -66,10 +68,10 @@ def plot(path, method, direction, signal, sentiment):
                             except:
                                 # all_pnls[holding] = [(int(decile * 2) - 1, int(count_dict[count]) - 1, cum_pnl)]
                                 all_pnls[holding] = [(int(decile) - 1, int(count) - 1, cum_pnl)]
-    heatmap(all_pnls, method, direction, signal, sentiment)
+    heatmap(all_pnls, method, direction, signal, sentiment, ret_type)
 
 
-def heatmap(all_pnls, method, direction, signal, sentiment):
+def heatmap(all_pnls, method, direction, signal, sentiment, ret_type):
     hms = []
     all_pnls = sorted(all_pnls.items(), key=lambda x: int(re.findall('cmc([\d]+)', x[0])[0]))
     for key, value in all_pnls:
@@ -106,11 +108,11 @@ def heatmap(all_pnls, method, direction, signal, sentiment):
     #         grid.add(hms[idx], grid_opts=opts.GridOpts(pos_right="60%"))
     #         page.add(grid)
     # page.render(path='figs/heatmaps.html')
-    tab = Tab(page_title=f'{method}_heatmaps_{signal}_{direction}_{sentiment}'.upper())
+    tab = Tab(page_title=f'{method}_heatmaps_{signal}_{direction}_{sentiment}{ret_type}'.upper())
     keys, values = list(zip(*all_pnls))
     for key, hm in zip(keys, hms):
         tab.add(hm, key)
-    tab.render(path=f'figs/{method}_heatmaps_{signal}_{direction}{sentiment}.html')
+    tab.render(path=f'figs/{method}_heatmaps_{signal}_{direction}{sentiment}{ret_type}.html')
 
 
 def comp_cum_pnl(df, benchmark, direction):
@@ -141,10 +143,12 @@ if __name__ == '__main__':
     signals = ['rank']
     # signals = ['rank', 'change']
     directions = ['long', 'short']
-    sentiments = ['', '_positive', '_negative']
-    combs = product(methods, signals, directions, sentiments)
+    # sentiments = ['_positive', '_negative']
+    sentiments = ['_positive_3pm', '_negative_3pm']
+    ret_types = ['_ori', '']
+    combs = product(methods, signals, directions, sentiments, ret_types)
 
-    for method, signal, direction, sentiment in combs:
-        print(f'Doing {method} - {signal} - {direction} - {sentiment}')
+    for method, signal, direction, sentiment, ret_type in combs:
+        print(f'Doing {method} - {signal} - {direction} - {sentiment} - {ret_type}')
         path = f'data/params_top_{signal}{sentiment}'
-        plot(path, method, direction, signal, sentiment)
+        plot(path, method, direction, signal, sentiment, ret_type)

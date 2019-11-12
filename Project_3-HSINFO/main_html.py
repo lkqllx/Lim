@@ -23,9 +23,9 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")
 
 
-EMAIL_RECEIVERS = 'simon.chan@limadvisors.com'
+EMAIL_RECEIVERS = ['simon.chan@limadvisors.com', 'andrew.li@limadvisors.com']
 ALTERNATE_EMAIL_RECEIVER = 'andrew.li@limadvisors.com'
-EMAIL_SENDER = 'andrew730.li@outlook.com'
+EMAIL_SENDER = 'andrew730.li@gmail.com'
 EMAIL_SENDER_PASSWORD = 'LlX13985112851'
 
 
@@ -45,8 +45,8 @@ class Crawler:
 
 
 def send_email_by_smtp(subject="", body=""):
-    smtp_server = "smtp.office365.com"
-    port = 587  # For starttls
+    smtp_server = "smtp.gmail.com"
+    port = 465  # For starttls
     sender_email = EMAIL_SENDER
     password = EMAIL_SENDER_PASSWORD
 
@@ -55,42 +55,41 @@ def send_email_by_smtp(subject="", body=""):
 
     # Try to log in to server and send email
     try:
-        server = smtplib.SMTP(smtp_server, port)
-        server.ehlo() # Can be omitted
-        server.starttls(context=context)  # Secure the connection
-        server.ehlo() # Can be omitted
-        server.login(sender_email, password)
-        sender_email = EMAIL_SENDER
+        # server = smtplib.SMTP(smtp_server, port)
+        # server.ehlo() # Can be omitted
+        # server.starttls(context=context)  # Secure the connection
+        # server.ehlo() # Can be omitted
+        # server.login(sender_email, password)
+        with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+            server.login(sender_email, password)
+            if body is None:
+                receiver_email = [ALTERNATE_EMAIL_RECEIVER,]
+                html = "<p>No update</p>"
+            else:
+                receiver_email = EMAIL_RECEIVERS
+                # Create the body of the message (HTML version).
+                html = body
+            # Create message container - the correct MIME type is multipart/alternative.
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = sender_email
+            for receiver in receiver_email:
+                msg['To'] = receiver
 
-        if body is None:
-            receiver_email = [ALTERNATE_EMAIL_RECEIVER]
-            html = "<p>No update</p>"
-        else:
-            receiver_email = [EMAIL_RECEIVERS,]
-            # Create the body of the message (HTML version).
-            html = body
-        # Create message container - the correct MIME type is multipart/alternative.
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = sender_email
-        for receiver in receiver_email:
-            msg['To'] = receiver
+            # Record the MIME types of both parts - text/plain and text/html.
+            part1 = MIMEText(html, 'html')
 
-        # Record the MIME types of both parts - text/plain and text/html.
-        part1 = MIMEText(html, 'html')
+            # Attach parts into message container.
+            # According to RFC 2046, the last part of a multipart message, in this case
+            # the HTML message, is best and preferred.
+            msg.attach(part1)
 
-        # Attach parts into message container.
-        # According to RFC 2046, the last part of a multipart message, in this case
-        # the HTML message, is best and preferred.
-        msg.attach(part1)
-
-        for receiver in receiver_email:
-            server.sendmail(sender_email, receiver.split(','), msg.as_string())
+            for receiver in receiver_email:
+                server.sendmail(sender_email, receiver.split(','), msg.as_string())
     except Exception as e:
         # Print any error messages to stdout
         print(str(e))
-    finally:
-        server.quit()
+
 
 
 def create_HTML_title(title):
