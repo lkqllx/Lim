@@ -20,21 +20,10 @@ def plot_bolling_bandas():
         Kline(init_opts=opts.InitOpts(width='1600px', height='1200'))
         .add_xaxis(dates)
         .add_yaxis("Kline of CSI300", data)
-        # .set_global_opts(
-        # xaxis_opts=opts.AxisOpts(is_scale=True),
-        # yaxis_opts=opts.AxisOpts(
-        #     is_scale=True,
-        #     splitarea_opts=opts.SplitAreaOpts(
-        #         is_show=True, areastyle_opts=opts.AreaStyleOpts(opacity=1)
-        #     ),
-        # ),
-        # datazoom_opts=[opts.DataZoomOpts(pos_bottom="-2%")],
-        # title_opts=opts.TitleOpts(title="Double Bollinger Bands"),
-        # legend_opts=opts.LegendOpts(pos_top='5%')
-        # )
         .set_global_opts(
             title_opts=opts.TitleOpts(
                 title="CSI300 Kline",
+                subtitle="MA 就以(2, 4, 6, 8为例)",
             ),
             xaxis_opts=opts.AxisOpts(type_="category"),
             yaxis_opts=opts.AxisOpts(
@@ -149,7 +138,6 @@ def plot_bolling_bandas():
     )
 
     grid_chart.render()
-
 
 if __name__ == '__main__':
     jq.auth('18810906018', '906018')
