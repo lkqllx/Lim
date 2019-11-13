@@ -15,19 +15,14 @@ import jqdatasdk as jq
 from progress.bar import Bar
 import logging
 
-logging.basicConfig(filename='logs/forum.log', filemode='w',
+logging.basicConfig(filename='logs/daily_routine.log', filemode='w',
                     format='%(name)s - %(levelname)s - %(message)s', level=logging.ERROR)
-
+lock = threading.RLock()
+processer_lock = mp.Lock()
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument('--log-level=3')
 chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-lock = threading.RLock()
-
-
-# date = dt.datetime.strftime(dt.datetime.now(), "%Y-%m-%d")
-date = '2019-10-15'
-
 
 def timer(fn):
     """
@@ -104,7 +99,6 @@ class Stock:
                 driver.get(first_page)
                 soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
         except Exception as e:
-            # print(f'Error - {self._ticker} - {str(e)} - Stock.run')
             logging.error(f'Error - {self._ticker} - {str(e)} - Stock.run', exc_info=True)
             return False
         elements = soup.find_all('span', class_='sumpage')
@@ -118,18 +112,17 @@ class Stock:
         # global bar
         # bar = Bar(f'Scraping {self._ticker}', max=self.total_pages)
         sites = [f'http:/' \
-                 f'/guba.eastmoney.com/list,{self._ticker},f_{count}.html' for count in range(self.total_pages)]
+                 f'/guba.eastmoney.com/list,{self._ticker},f_{count}.html' for count in range(30)]
         self.download_all_sites(sites)
-        # bar.finish()
 
         all_sites = sorted(self.all_websites.items(), key=lambda x: int(x[0]))
         time_parsing = 0
 
-        print(f'Parsing - {self._ticker}')
+        # print(f'Parsing - {self._ticker}')
         for _, page in all_sites:
             _, time_elapsed = self.parsing(page)
             time_parsing += time_elapsed
-        print(f'Parsing Time - {int(time_parsing)} seconds')
+        # print(f'Parsing Time - {int(time_parsing)} seconds')
         return True
 
     def get_session(self):
@@ -239,7 +232,6 @@ class Stock:
                     df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'] =  \
                         df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
             except Exception as e:
-                # print(f'Error - {str(e)} - reformat_date - reformat_loop')
                 logging.error(f'Error - {str(e)} - reformat_date - reformat_loop', exc_info=True)
                 return
         return df
@@ -251,55 +243,80 @@ def run_by_date(ticker):
     :param ticker: the stock to be scraped
     :return: None
     """
-    print('-' * 20, f'Doing {ticker}', '-' * 20)
+    # print('-' * 20, f'Doing {ticker}', '-' * 20)
     try:
         complete = False
         max_epoch = 5
-        while (not complete) and (max_epoch > 0):
+        while (not complete) and (max_epoch >= 0):
             max_epoch -= 1
-            if not os.path.exists(f'data/historical/{date}/{ticker}.csv'):
-                stock = Stock(ticker)
-                complete = stock.run()
-                if complete:
-                    df = pd.DataFrame(stock.info_list, columns=['Time', 'Title', 'Author', 'Number of reads', 'Comments', 'Link'])
-                    print(f'Finish Downloading {ticker}')
-                    formated_df = stock.reformat_date(df)
-                    print(f'Finish Formatting {ticker}')
-                    formated_df.to_csv(f'data/historical/{date}/{ticker}.csv', encoding='utf_8_sig', index=False)
+            stock = Stock(ticker)
+            complete = stock.run()
+            if complete:
+                df = pd.DataFrame(stock.info_list, columns=['Time', 'Title', 'Author',
+                                                            'Number of reads', 'Comments', 'Link'])
+                # print(f'Finish Downloading {ticker}')
+                formated_df = stock.reformat_date(df)
+                formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
+                filtered_df = formated_df[(formated_df['Time'] >= target_start_date) &
+                                          (formated_df['Time'] < target_end_date)]
+                current_number_posts = filtered_df['Time'].count()
+
+                with processer_lock:
+                    curr_list.append((ticker, current_number_posts))
+
+
+                # print(f'Finish Formatting {ticker}')
+                # filtered_df.to_csv(f'data/historical/today/{ticker}.csv', encoding='utf_8_sig', index=False)
+            else:
+                with processer_lock:
+                    curr_list.append((ticker, False))
+
     except Exception as e:
         logging.error(f'Error - {ticker} - {str(e)} - run_by_date', exc_info=True)
 
-
+@timer
 def run_by_multiprocesses():
     """
     Multiprocess function to speed up the program
     :return: None
     """
-    if not os.path.exists(f'data/historical/{date}'):  # global variable: date
-        os.mkdir(f'data/historical/{date}')
-
-    # csi300 = pd.read_excel('data/target_list/csi300.xls', index_col=0).values[:, 3].tolist()
-
-    with open('data/all_list.pkl', 'rb') as f:
-        csi300 = pickle.load(f)
+    if not os.path.exists('data/current_list.pkl'):
+        jq.auth('18810906018', '906018')
+        csi300 = jq.get_index_stocks('000300.XSHG', dt.datetime.strftime(dt.datetime.now(), format='%Y-%m-%d'))
+        with open('data/current_list.pkl', 'wb') as f:
+            pickle.dump(csi300, f)
+    else:
+        with open('data/current_list.pkl', 'rb') as f:
+            csi300 = pickle.load(f)
     csi300 = [ticker.split('.')[0] for ticker in csi300]
-    existed_files = os.listdir('data/historical/2019-10-15')
-    existed_files = [file.split('.')[0] for file in existed_files if re.match('.+csv', file)]
 
-    csi300_list = [file for file in csi300 if file not in existed_files]
-    # for ticker in csi300:
-        # if ticker >= 600000:
-        #     csi300_list.append(f'{ticker}')
-        # else:
-        #     csi300_list.append(f'{ticker}'.zfill(6))
-
-    # csi300_list = ['600004']
-    pool = mp.Pool(8)  # We may use multiple processes to speed up the program but progress bar will not appear properly
-    pool.map(run_by_date, csi300_list)
-    # with Bar('Processing', max=len(csi300_list)) as bar:
-    #     for _ in pool.imap_unordered(run_by_date, csi300_list):
-            # bar.next()
+    pool = mp.Pool(8)
+    with Bar('Downloading', max=len(csi300)) as bar:
+        for _ in pool.imap_unordered(run_by_date, csi300):
+            bar.next()
+    #     for ticker in csi300:
+    #         run_by_date(ticker)
+    #         bar.next()
 
 
 if __name__ == '__main__':
-    run_by_multiprocesses()
+    while True:
+        today = dt.datetime.now()
+        yesturday = dt.datetime.now() - dt.timedelta(1)
+        # if time.localtime().tm_hour == 14 and time.localtime().tm_min == 30:
+        if True:
+            try:
+                global target_end_date, target_start_date, curr_list
+                target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
+                target_start_date = dt.datetime(yesturday.year, yesturday.month, yesturday.day, 15)
+                curr_list = mp.Manager().list()
+                time_used = run_by_multiprocesses()
+                print(f'Time Elapsed - {time_used[1]}')
+                pd.DataFrame(np.array(curr_list),
+                             columns=['ticker', 'number of posts']).to_csv('data/today_post.csv', index=False)
+                break
+            except Exception as e:
+                logging.exception('message')
+                print(e)
+                break
+
