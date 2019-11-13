@@ -1,0 +1,15 @@
+root - ERROR - Parsing - too many values to unpack (expected 5)
+Traceback (most recent call last):
+  File "daily_routine.py", line 83, in parsing
+    readings, comments, title, author, published_time = text.split('\n')
+ValueError: too many values to unpack (expected 5)
+root - ERROR - Parsing - too many values to unpack (expected 5)
+Traceback (most recent call last):
+  File "daily_routine.py", line 83, in parsing
+    readings, comments, title, author, published_time = text.split('\n')
+ValueError: too many values to unpack (expected 5)
+root - ERROR - Parsing - too many values to unpack (expected 5)
+Traceback (most recent call last):
+  File "daily_routine.py", line 83, in parsing
+    readings, comments, title, author, published_time = text.split('\n')
+ValueError: too many values to unpack (expected 5)
