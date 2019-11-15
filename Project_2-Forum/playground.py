@@ -20,7 +20,28 @@ import sys
 #         prices_matrix = curr_df
 # prices_matrix = prices_matrix.iloc[:, prices_matrix.columns.get_level_values(1) == 'cmo_ret']
 
+#
+# while True:
+#     print('Successful!')
+#     print(f'Input - {sys.argv[1]}')
 
-while True:
-    print('Successful!')
-    print(f'Input - {sys.argv[1]}')
+import requests, bs4,itertools
+import numpy as np
+
+def get_proxy():
+    proxies = []
+    url = 'https://free-proxy-list.net/'
+    web = requests.get(url)
+    soup = bs4.BeautifulSoup(web.content, 'html')
+    items = soup.find_all('tr')[1:]
+    for item in items:
+        cells = item.find_all('td')
+        try:
+            if cells[6].text == 'yes':
+                proxies.append(':'.join([cells[0].text, cells[1].text]))
+        except:
+            continue
+    proxies = np.random.permutation(proxies)
+    return itertools.cycle(proxies)
+
+get_proxy()
