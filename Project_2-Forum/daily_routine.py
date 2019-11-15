@@ -24,6 +24,7 @@ chrome_options.add_argument("--headless")
 chrome_options.add_argument('--log-level=3')
 chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
+
 def timer(fn):
     """
     Perform as a timer for function
@@ -92,17 +93,15 @@ class Stock:
         :return: True/False indicating that whether the stock is acquired successfully or not
         """
 
-        first_page = f'http://guba.eastmoney.com/list,{self._ticker}_1.html'  # Use selenium to get the total pages
+        first_page = f'http://guba.eastmoney.com/list,{self._ticker}.html'  # Use selenium to get the total pages
         try:
             with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
                 driver.set_page_load_timeout(30)
                 driver.get(first_page)
-                soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
+                # soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
         except Exception as e:
             logging.error(f'Error - {self._ticker} - {str(e)} - Stock.run', exc_info=True)
             return False
-        elements = soup.find_all('span', class_='sumpage')
-        self.total_pages = int(elements[0].text)
 
         """
         Download all the websites and join them into a single string variable (all_in_one) for parsing
@@ -264,9 +263,6 @@ def run_by_date(ticker):
                 with processer_lock:
                     curr_list.append((ticker, current_number_posts))
 
-
-                # print(f'Finish Formatting {ticker}')
-                # filtered_df.to_csv(f'data/historical/today/{ticker}.csv', encoding='utf_8_sig', index=False)
             else:
                 with processer_lock:
                     curr_list.append((ticker, False))
@@ -289,14 +285,10 @@ def run_by_multiprocesses():
         with open('data/current_list.pkl', 'rb') as f:
             csi300 = pickle.load(f)
     csi300 = [ticker.split('.')[0] for ticker in csi300]
-
     pool = mp.Pool(8)
     with Bar('Downloading', max=len(csi300)) as bar:
-        for _ in pool.imap_unordered(run_by_date, csi300):
+        for _ in pool.imap_unordered(run_by_date, csi300[:100]):
             bar.next()
-    #     for ticker in csi300:
-    #         run_by_date(ticker)
-    #         bar.next()
 
 
 if __name__ == '__main__':
@@ -312,6 +304,7 @@ if __name__ == '__main__':
                 curr_list = mp.Manager().list()
                 time_used = run_by_multiprocesses()
                 print(f'Time Elapsed - {time_used[1]}')
+
                 pd.DataFrame(np.array(curr_list),
                              columns=['ticker', 'number of posts']).to_csv('data/today_post.csv', index=False)
                 break

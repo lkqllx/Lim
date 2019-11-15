@@ -29,14 +29,14 @@ summ<- function (y){
 }
 
 # pnls = read.csv('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/excess_return.csv')
-reads = c('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/excess_return.csv',
+reads = c('/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/original_return.csv',
           '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/2015.csv',
           '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/2016.csv',
           '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/2017.csv',
           '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/2018.csv',
           '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/excess_ret/2019.csv')
 year = c('all', '2015', '2016', '2017', '2018', '2019')
-writes = '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/stats.csv'
+writes = '/Users/andrew/Desktop/HKUST/Projects/Firm/LIM/Project_2-Forum/R/stats_ori.csv'
 all_stats = c()
 for (path_idx in 1:6){
     pnls = read.csv(reads[path_idx])
