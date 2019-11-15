@@ -689,8 +689,8 @@ class Backtest:
         plot_data = plot_data.round(3)
         plot_data.to_csv(save_to)
 
-        # pd.DataFrame(self.inventory_history, index=self.valid_dates,
-        #              columns=self.ret_matrix.columns).to_csv('data/interim/inventory_history.csv')
+        pd.DataFrame(self.inventory_history, index=self.valid_dates,
+                     columns=self.ret_matrix.columns).to_csv('data/interim/inventory_history.csv')
 
     def cal_turnover(self):
         inventory_history = pd.DataFrame(self.inventory_history, index=self.valid_dates,
@@ -735,13 +735,13 @@ def run_backtest():
             print(' ' * 9, f'Decile {decile} - Counting {counting}')
             print('*' * 40)
             # decile = round(decile/2, 1)
-            if not os.path.exists(f'data/params_top_rank_3pm/Decile {decile} - Counting {counting}'):
-                os.mkdir(f'data/params_top_rank_3pm/Decile {decile} - Counting {counting}')
+            if not os.path.exists(f'data/params_top_rank_negative_3pm/Decile {decile} - Counting {counting}'):
+                os.mkdir(f'data/params_top_rank_negative_3pm/Decile {decile} - Counting {counting}')
 
-            cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile, sentiment=None)
+            cs = CrossSignal(start=start, end=end, signal_period=counting, decile=decile, sentiment='negative')
 
             bs = Backtest(cs.equal_weight_rank_signal(), start=start, end=end,
-                          path=f'data/params_top_rank_3pm/Decile {decile} - Counting {counting}')
+                          path=f'data/params_top_rank_negative_3pm/Decile {decile} - Counting {counting}')
             for mode in modes:
                 interval = int(re.findall('cmc([0-9]+).+', mode)[0])
                 bs.simulate_one_portfolio(start_date=0, interval=interval)

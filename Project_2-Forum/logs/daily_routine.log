@@ -1,15 +1,96 @@
-root - ERROR - Parsing - too many values to unpack (expected 5)
+root - ERROR - Error - 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320' - links_reformatting
 Traceback (most recent call last):
-  File "daily_routine.py", line 83, in parsing
-    readings, comments, title, author, published_time = text.split('\n')
-ValueError: too many values to unpack (expected 5)
-root - ERROR - Parsing - too many values to unpack (expected 5)
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in reformat_date
+    sorted_all_websites = [self.all_websites[link] for link in links]
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in <listcomp>
+    sorted_all_websites = [self.all_websites[link] for link in links]
+KeyError: 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320'
+root - ERROR - Error - 300498 - 'NoneType' object is not subscriptable - run_by_date
 Traceback (most recent call last):
-  File "daily_routine.py", line 83, in parsing
-    readings, comments, title, author, published_time = text.split('\n')
-ValueError: too many values to unpack (expected 5)
-root - ERROR - Parsing - too many values to unpack (expected 5)
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 271, in run_by_date
+    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
+TypeError: 'NoneType' object is not subscriptable
+root - ERROR - Error - 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320' - links_reformatting
 Traceback (most recent call last):
-  File "daily_routine.py", line 83, in parsing
-    readings, comments, title, author, published_time = text.split('\n')
-ValueError: too many values to unpack (expected 5)
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in reformat_date
+    sorted_all_websites = [self.all_websites[link] for link in links]
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in <listcomp>
+    sorted_all_websites = [self.all_websites[link] for link in links]
+KeyError: 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320'
+root - ERROR - Error - 300498 - 'NoneType' object is not subscriptable - run_by_date
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 271, in run_by_date
+    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
+TypeError: 'NoneType' object is not subscriptable
+root - ERROR - Error - 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320' - links_reformatting
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in reformat_date
+    sorted_all_websites = [self.all_websites[link] for link in links]
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in <listcomp>
+    sorted_all_websites = [self.all_websites[link] for link in links]
+KeyError: 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320'
+root - ERROR - Error - 300498 - 'NoneType' object is not subscriptable - run_by_date
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 271, in run_by_date
+    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
+TypeError: 'NoneType' object is not subscriptable
+money.com/detail.html?qid=352594835163320320' - links_reformatting
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in reformat_date
+    sorted_all_websites = [self.all_websites[link] for link in links]
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in <listcomp>
+    sorted_all_websites = [self.all_websites[link] for link in links]
+KeyError: 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320'
+root - ERROR - Error - 000568 - 'NoneType' object is not subscriptable - run_by_date
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 271, in run_by_date
+    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
+TypeError: 'NoneType' object is not subscriptable
+root - ERROR - Error - 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320' - links_reformatting
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in reformat_date
+    sorted_all_websites = [self.all_websites[link] for link in links]
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in <listcomp>
+    sorted_all_websites = [self.all_websites[link] for link in links]
+KeyError: 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320'
+root - ERROR - Error - 000568 - 'NoneType' object is not subscriptable - run_by_date
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 271, in run_by_date
+    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
+TypeError: 'NoneType' object is not subscriptable
+root - ERROR - Error - 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320' - links_reformatting
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in reformat_date
+    sorted_all_websites = [self.all_websites[link] for link in links]
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in <listcomp>
+    sorted_all_websites = [self.all_websites[link] for link in links]
+KeyError: 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320'
+root - ERROR - Error - 000568 - 'NoneType' object is not subscriptable - run_by_date
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 271, in run_by_date
+    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
+TypeError: 'NoneType' object is not subscriptable
+root - ERROR - Error - 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320' - links_reformatting
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in reformat_date
+    sorted_all_websites = [self.all_websites[link] for link in links]
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in <listcomp>
+    sorted_all_websites = [self.all_websites[link] for link in links]
+KeyError: 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320'
+root - ERROR - Error - 000568 - 'NoneType' object is not subscriptable - run_by_date
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 271, in run_by_date
+    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
+TypeError: 'NoneType' object is not subscriptable
+root - ERROR - Error - 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320' - links_reformatting
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in reformat_date
+    sorted_all_websites = [self.all_websites[link] for link in links]
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 215, in <listcomp>
+    sorted_all_websites = [self.all_websites[link] for link in links]
+KeyError: 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320'
+root - ERROR - Error - 000568 - 'NoneType' object is not subscriptable - run_by_date
+Traceback (most recent call last):
+  File "C:\Users\andrew.li\Desktop\Projects\Lim\Project_2-Forum\daily_routine.py", line 271, in run_by_date
+    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
+TypeError: 'NoneType' object is not subscriptable

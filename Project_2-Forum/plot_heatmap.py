@@ -144,7 +144,7 @@ if __name__ == '__main__':
     # signals = ['rank', 'change']
     directions = ['long', 'short']
     # sentiments = ['_positive', '_negative']
-    sentiments = ['_positive_3pm', '_negative_3pm']
+    sentiments = ['_negative_3pm', '_positive_3pm', '_3pm']
     ret_types = ['_ori', '']
     combs = product(methods, signals, directions, sentiments, ret_types)
 
