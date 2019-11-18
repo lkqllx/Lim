@@ -25,7 +25,7 @@ def process_rds_to_csv():
 def extract_excess_returns_to_r():
     # all_excess = pd.read_csv('R/excess_ret/excess_daily_pnls.csv', index_col=0, parse_dates=True)
     # all_excess = all_excess.iloc[:, list(range(1, all_excess.shape[1], 2))]
-    all_excess = pd.read_csv('R/excess_ret/excess_return.csv', index_col=0, parse_dates=True)
+    all_excess = pd.read_csv('R/excess_ret/original_return.csv', index_col=0, parse_dates=True)
     # all_excess.to_csv(f'R/excess_ret/excess_daily_pnls.csv')
     all_excess['Time'] = all_excess.index.values
     all_excess['Time'] = all_excess['Time'].apply(lambda x: str(x.year))
@@ -144,6 +144,7 @@ def create_caps():
     circulating_market_caps.columns = [name.split('.')[0] for name in circulating_market_caps.columns]
     circulating_market_caps.to_csv('data/fundamental/circulating_market_caps.csv')
 
+
 def masking_caps():
     market_caps = pd.read_csv('data/fundamental/market_caps.csv', index_col=0, parse_dates=True)
     circulating_market_caps = pd.read_csv('data/fundamental/circulating_market_caps.csv', index_col=0, parse_dates=True)
@@ -185,6 +186,7 @@ def run_by_mp(file):
             continue
     df.to_csv(f'data/historical/sentiment/{file}', encoding='utf_8_sig', index=False)
 
+
 def add_sentiment_to_posts():
     files = os.listdir('data/historical/2019-10-15/')
     files = [file for file in files if re.match('.+[csv]', file)]
@@ -192,6 +194,7 @@ def add_sentiment_to_posts():
     with Bar('Processing', max=len(files)) as bar:
         for _ in pool.imap_unordered(run_by_mp, files):
             bar.next()
+
 
 def create_new_benchmark():
     stock_posts = pd.read_csv('data/interim/weekend_stocks_post_matrix_after_masking.csv',
@@ -206,6 +209,7 @@ def create_new_benchmark():
     # mean_returns = mean_returns + 1
     # cum_return = mean_returns.cumprod() - 1
     # cum_return.plot()
+
 
 def add_sentiment_label():
     files = os.listdir('data/historical/sentiment/')
