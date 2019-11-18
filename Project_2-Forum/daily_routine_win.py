@@ -184,7 +184,7 @@ class Stock:
         Download all the pages to all_websites
         :param sites: the total sites to be scraped
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
             executor.map(self.download_site, sites)
 
     def reformat_date(self, df: pd.DataFrame):
@@ -303,8 +303,6 @@ def run_by_date(zipped_input):
     return (ticker, False, 0, 0)
 
 
-
-
 @timer
 def run_by_multiprocesses(dates):
     """
@@ -321,6 +319,7 @@ def run_by_multiprocesses(dates):
         with open('data/current_list.pkl', 'rb') as f:
             csi300 = pickle.load(f)
     csi300 = [ticker.split('.')[0] for ticker in csi300][:30]
+    csi300 = ['000568']
     results = []
     time_parsing = 0
     time_web = 0
