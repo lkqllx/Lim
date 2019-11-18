@@ -18,9 +18,9 @@ from openpyxl import Workbook
 from openpyxl.styles import colors
 from openpyxl.formatting.rule import DataBarRule
 
-
-logging.basicConfig(filename='logs/daily_routine.log', filemode='w',
-                    format='%(name)s - %(levelname)s - %(message)s', level=logging.ERROR)
+logging.basicConfig(filename=f'logs/daily_routine_{dt.datetime.now().year}{dt.datetime.now().month}'
+                             f'{dt.datetime.now().day}_{dt.datetime.now().hour}{dt.datetime.now().minute}.log',
+                    filemode='w', format='%(name)s - %(levelname)s - %(message)s', level=logging.ERROR)
 lock = threading.RLock()
 processer_lock = mp.Lock()
 chrome_options = Options()
@@ -107,7 +107,10 @@ class Stock:
                         break
                 text = target.text.strip('\n')
                 # readings, comments, title, author, published_time = text.split('\n')
+
                 all_info = text.split('\n')
+                if not re.match('[\d]+-[\d]+.+', all_info[-1]):
+                    continue
                 readings = all_info[0]
                 comments = all_info[1]
                 author = all_info[-2]
@@ -120,6 +123,19 @@ class Stock:
                 return False
         return True
 
+    def call_webdriver(self):
+        first_page = f'http://guba.eastmoney.com/list,{self._ticker}.html'  # Use selenium to get the total pages
+        try:
+            with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
+                driver.set_page_load_timeout(15)
+                driver.get(first_page)
+                # soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
+                driver.close()
+                driver.quit()
+                return True
+        except Exception as e:
+            logging.error(f'Error - {self._ticker} - {str(e)} - Stock.run', exc_info=True)
+            return False
 
     def run(self):
         """
@@ -127,34 +143,27 @@ class Stock:
         :return: True/False indicating that whether the stock is acquired successfully or not
         """
         start = time.time()
-        first_page = f'http://guba.eastmoney.com/list,{self._ticker}.html'  # Use selenium to get the total pages
-        try:
-            with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
-                driver.set_page_load_timeout(10)
-                driver.get(first_page)
-                # soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
-                driver.close()
-                driver.quit()
-        except Exception as e:
-            logging.error(f'Error - {self._ticker} - {str(e)} - Stock.run', exc_info=True)
-            return False, 0, 0
+        new_thread = threading.Thread(target=self.call_webdriver, daemon=True)
+        new_thread.start()
         time_web = int(time.time() - start)
         """
         Download all the websites and join them into a single string variable (all_in_one) for parsing
         """
         time_parsing = time.time()
         sites = [f'http:/' \
-                 f'/guba.eastmoney.com/list,{self._ticker},f_{count}.html' for count in range(10)]
+                 f'/guba.eastmoney.com/list,{self._ticker},f_{count}.html' for count in range(10) if count != 1]
         self.download_all_sites(sites)
         all_sites = sorted(self.all_websites.items(), key=lambda x: int(x[0]))
+        if len(all_sites) != len(sites):
+            """Make sure that all sites are downloaded successfully"""
+            return False, 0, 0
 
-        # print(f'Parsing - {self._ticker}')
         for _, page in all_sites:
             successful, time_elapsed = self.parsing(page)
             time_parsing += time_elapsed
             if not successful:
                 return False, 0, 0
-        # print(f'Parsing Time - {int(time_parsing)} seconds')
+
         time_parsing = int(time.time() - time_parsing)
         return True, time_parsing, time_web
 
@@ -183,13 +192,14 @@ class Stock:
                 lock.release()
         except requests.exceptions.Timeout:
             print(f'Timeout - {url}')
+            logging.exception(f'Timeout - {url}')
 
     def download_all_sites(self, sites):
         """
         Download all the pages to all_websites
         :param sites: the total sites to be scraped
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             executor.map(self.download_site, sites)
 
     def reformat_date(self, df: pd.DataFrame):
@@ -271,14 +281,14 @@ class Stock:
         return df
 
 
-def run_by_date(ticker):
+def run_by_date(args):
     """
     Scrape the stock info given its ticker
     :param ticker: the stock to be scraped
     :return: None
     """
     # print('-' * 20, f'Doing {ticker}', '-' * 20)
-
+    ticker, dates = args
     complete = False
     max_epoch = 5
     while (not complete) and (max_epoch >= 0):
@@ -295,15 +305,9 @@ def run_by_date(ticker):
                 filtered_df = formated_df[(formated_df['Time'] >= dates[0]) &
                                           (formated_df['Time'] < dates[1])]
                 current_number_posts = filtered_df['Time'].count()
-
-<<<<<<< HEAD:Project_2-Forum/daily_routine_win.py
+                if current_number_posts == 0:
+                    print(f'{ticker}')
                 return (ticker, current_number_posts, time_web, time_parsing)
-=======
-                with processer_lock:
-                    curr_list.append((ticker, current_number_posts))
-
-                return (ticker, current_number_posts)
->>>>>>> 310cc3af5f9ba82b8d66998ab4763dc0c85d61e2:Project_2-Forum/daily_routine_os.py
             else:
                 logging.info(f'Missing the Value of {ticker}')
 
@@ -311,46 +315,27 @@ def run_by_date(ticker):
             logging.error(f'Error - {ticker} - {str(e)} - run_by_date', exc_info=True)
             complete = False
             continue
-
-    return (ticker, False, 0, 0)
+    return (ticker, -1, 0, 0)
 
 
 
 @timer
-def run_by_multiprocesses():
+def run_by_multiprocesses(csi300, dates):
     """
     Multiprocess function to speed up the program
     :return: None
     """
-
-    if not os.path.exists('data/current_list.pkl'):
-        jq.auth('18810906018', '906018')
-        csi300 = jq.get_index_stocks('000300.XSHG', dt.datetime.strftime(dt.datetime.now(), format='%Y-%m-%d'))
-        with open('data/current_list.pkl', 'wb') as f:
-            pickle.dump(csi300, f)
-    else:
-        with open('data/current_list.pkl', 'rb') as f:
-            csi300 = pickle.load(f)
-<<<<<<< HEAD:Project_2-Forum/daily_routine_win.py
-    csi300 = [ticker.split('.')[0] for ticker in csi300][:30]
-    csi300 = ['000568']
     results = []
     time_parsing = 0
     time_web = 0
     with Bar('Downloading', max=len(csi300)) as bar:
-        with mp.Pool(4) as pool:
+        with mp.Pool(8) as pool:
             for output in pool.imap_unordered(run_by_date, zip(csi300, [dates] * len(csi300))):
                 bar.next()
                 results.append(output[:2])
                 time_web += output[2]
                 time_parsing += output[3]
     return results, time_web, time_parsing
-=======
-    csi300 = [ticker.split('.')[0] for ticker in csi300][:100]
-    pool = mp.Pool(8)
-    with Bar('Downloading', max=len(csi300)) as bar:
-        for _ in pool.imap_unordered(run_by_date, csi300):
-            bar.next()
 
 
 def write_into_excel(curr_list):
@@ -375,35 +360,46 @@ def write_into_excel(curr_list):
                                 color="0e71c7")
     sheet.conditional_formatting.add(f"B2:B{2 + len(curr_list)}", data_bar_rule)
     workbook.save(filename)
->>>>>>> 310cc3af5f9ba82b8d66998ab4763dc0c85d61e2:Project_2-Forum/daily_routine_os.py
 
 
 if __name__ == '__main__':
     # while True:
+
     today = dt.datetime.now()
     yesturday = dt.datetime.now() - dt.timedelta(1)
+    if not os.path.exists('data/current_list.pkl'):
+        jq.auth('18810906018', '906018')
+        csi300 = jq.get_index_stocks('000300.XSHG', dt.datetime.strftime(dt.datetime.now(), format='%Y-%m-%d'))
+        with open('data/current_list.pkl', 'wb') as f:
+            pickle.dump(csi300, f)
+    else:
+        with open('data/current_list.pkl', 'rb') as f:
+            csi300 = pickle.load(f)
+    csi300 = [ticker.split('.')[0] for ticker in csi300][:300]
+    # csi300 = ['000069']
     # if time.localtime().tm_hour == 14 and time.localtime().tm_min == 30:
     if True:
         try:
+
             target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
             target_start_date = dt.datetime(yesturday.year, yesturday.month, yesturday.day, 15)
-            global dates, curr_list
             dates = list([target_start_date, target_end_date])
-<<<<<<< HEAD:Project_2-Forum/daily_routine_win.py
-            # dates.append(target_start_date, target_end_date)
-            # curr_list = mp.Manager().list()
-            (curr_list, time_web, time_parsing), time_used = run_by_multiprocesses(dates)
+            (curr_list, time_web, time_parsing), time_used = run_by_multiprocesses(csi300, dates)
             print(f'Time Elapsed - {time_used}')
             print(f'Time Web - {time_web}')
             print(f'Time Parse - {time_parsing}')
-            pd.DataFrame(np.array(curr_list),
-                         columns=['ticker', 'number of posts']).to_csv('data/today_post.csv', index=False)
-=======
-            curr_list = mp.Manager().list()
-            _, time_used = run_by_multiprocesses()
-            print(f'Time Elapsed - {time_used}')
+            all_succesful = all(np.not_equal(list(zip(*curr_list))[1], -1))
+            succesful_list = [(ticker, post) for ticker, post in curr_list if post != -1]
+            not_succesful_list = [ticker for ticker, post in curr_list if post == -1]
+            new_curr_list = []
+            count = 5
+            while (not all_succesful) and count >= 0:
+                print('Failed Ticker', f'\n, '.join(not_succesful_list))
+                (new_curr_list, time_web, time_parsing), time_used = run_by_multiprocesses(not_succesful_list, dates)
+                all_succesful = all(np.not_equal(list(zip(*new_curr_list))[1], -1))
+                count -= 1
+            succesful_list.append(new_curr_list)
             write_into_excel(curr_list)
->>>>>>> 310cc3af5f9ba82b8d66998ab4763dc0c85d61e2:Project_2-Forum/daily_routine_os.py
 
         except Exception as e:
             logging.exception('message')
