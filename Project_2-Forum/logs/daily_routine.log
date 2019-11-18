@@ -1,159 +1,280 @@
-root - ERROR - Parsing - too many values to unpack (expected 5)
+root - ERROR - Error - 000002 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 84, in parsing
-    readings, comments, title, author, published_time = text.split('\n')
-ValueError: too many values to unpack (expected 5)
-root - ERROR - Error - 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320' - links_reformatting
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000069 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 203, in reformat_date
-    sorted_all_websites = [self.all_websites[link] for link in links]
-  File "daily_routine.py", line 203, in <listcomp>
-    sorted_all_websites = [self.all_websites[link] for link in links]
-KeyError: 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320'
-root - ERROR - Error - 000333 - 'NoneType' object is not subscriptable - run_by_date
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000157 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000166 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
+Traceback (most recent call last):
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000553 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
+Traceback (most recent call last):
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000625 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
+Traceback (most recent call last):
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000627 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
+Traceback (most recent call last):
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000629 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
+Traceback (most recent call last):
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000651 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
+Traceback (most recent call last):
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
 root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
 Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000596 - 'NoneType' object is not subscriptable - run_by_date
-Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
-Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000627 - 'NoneType' object is not subscriptable - run_by_date
-Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
-Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000630 - 'NoneType' object is not subscriptable - run_by_date
-Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
-Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
+  File "daily_routine.py", line 231, in reformat_date
     text = soup.find('div', class_='zwfbtime').text
 AttributeError: 'NoneType' object has no attribute 'text'
 root - ERROR - Error - 000661 - 'NoneType' object is not subscriptable - run_by_date
 Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
+  File "daily_routine.py", line 277, in run_by_date
     formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
 TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
+root - ERROR - Error - 000703 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000651 - 'NoneType' object is not subscriptable - run_by_date
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000783 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320' - links_reformatting
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000786 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 203, in reformat_date
-    sorted_all_websites = [self.all_websites[link] for link in links]
-  File "daily_routine.py", line 203, in <listcomp>
-    sorted_all_websites = [self.all_websites[link] for link in links]
-KeyError: 'http://guba.eastmoney.comhttp://ask.eastmoney.com/detail.html?qid=352594835163320320'
-root - ERROR - Error - 000568 - 'NoneType' object is not subscriptable - run_by_date
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000876 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000961 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000703 - 'NoneType' object is not subscriptable - run_by_date
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 000783 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 002007 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000709 - 'NoneType' object is not subscriptable - run_by_date
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 002310 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+
+root - ERROR - Error - 002475 - Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+ - Stock.run
 Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000671 - 'NoneType' object is not subscriptable - run_by_date
-Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
-Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000625 - 'NoneType' object is not subscriptable - run_by_date
-Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
-Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000728 - 'NoneType' object is not subscriptable - run_by_date
-Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
-Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000768 - 'NoneType' object is not subscriptable - run_by_date
-Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
-Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000776 - 'NoneType' object is not subscriptable - run_by_date
-Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
-root - ERROR - Error - 'NoneType' object has no attribute 'text' - reformat_date - find_year_loop
-Traceback (most recent call last):
-  File "daily_routine.py", line 212, in reformat_date
-    text = soup.find('div', class_='zwfbtime').text
-AttributeError: 'NoneType' object has no attribute 'text'
-root - ERROR - Error - 000725 - 'NoneType' object is not subscriptable - run_by_date
-Traceback (most recent call last):
-  File "daily_routine.py", line 258, in run_by_date
-    formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-TypeError: 'NoneType' object is not subscriptable
+  File "daily_routine.py", line 113, in run
+    driver.get(first_page)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "/Users/andrew/.local/lib/python3.6/site-packages/selenium/webdriver/remote/errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout
+  (Session info: headless chrome=78.0.3904.97)
+

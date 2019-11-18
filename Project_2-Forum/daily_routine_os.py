@@ -9,11 +9,15 @@ import concurrent.futures
 import requests
 import threading
 import time
-import re, pickle
+import re, pickle, itertools
 import multiprocessing as mp
 import jqdatasdk as jq
 from progress.bar import Bar
 import logging
+from openpyxl import Workbook
+from openpyxl.styles import colors
+from openpyxl.formatting.rule import DataBarRule
+
 
 logging.basicConfig(filename='logs/daily_routine.log', filemode='w',
                     format='%(name)s - %(levelname)s - %(message)s', level=logging.ERROR)
@@ -23,6 +27,8 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument('--log-level=3')
 chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+# count = mp.Value('d', 0)
+# print('geneius')
 
 
 def timer(fn):
@@ -35,7 +41,7 @@ def timer(fn):
         start = time.time()
         fn_output = fn(*args, **kwargs)
         end = time.time()
-        return [fn_output, float(end - start)]
+        return [fn_output, int(end - start)]
     return wrapper
 
 
@@ -81,24 +87,33 @@ class Stock:
                     if re.match('/news,[\w\d]+,[\w\d]+.html', link.get('href')):
                         break
                 text = target.text.strip('\n')
-                readings, comments, title, author, published_time = text.split('\n')
+                # readings, comments, title, author, published_time = text.split('\n')
+                all_info = text.split('\n')
+                readings = all_info[0]
+                comments = all_info[1]
+                author = all_info[-2]
+                published_time = all_info[-1]
+                title = ''.join(all_info[2:-2])
                 self.info_list.append((published_time, title, author, readings, comments, web_base+link.get('href')))
             except Exception as e:
                 # print(f'Parsing - {e}')
                 logging.error(f'Parsing - {e}', exc_info=True)
+                return False
+        return True
 
     def run(self):
         """
         For the stock, function will require all the pages and parse the website
         :return: True/False indicating that whether the stock is acquired successfully or not
         """
-
         first_page = f'http://guba.eastmoney.com/list,{self._ticker}.html'  # Use selenium to get the total pages
         try:
             with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
-                driver.set_page_load_timeout(30)
+                driver.set_page_load_timeout(10)
                 driver.get(first_page)
                 # soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
+                driver.close()
+                driver.quit()
         except Exception as e:
             logging.error(f'Error - {self._ticker} - {str(e)} - Stock.run', exc_info=True)
             return False
@@ -119,8 +134,10 @@ class Stock:
 
         # print(f'Parsing - {self._ticker}')
         for _, page in all_sites:
-            _, time_elapsed = self.parsing(page)
+            successful, time_elapsed = self.parsing(page)
             time_parsing += time_elapsed
+            if not successful:
+                return False
         # print(f'Parsing Time - {int(time_parsing)} seconds')
         return True
 
@@ -139,7 +156,7 @@ class Stock:
         # lock.release()
         session = self.get_session()
         try:
-            with session.request(method='GET', url=url, timeout=60) as response:
+            with session.request(method='GET', url=url, timeout=30) as response:
                 try:
                     count = re.findall('list,[\w\d]+,f_(\d+).html', url)[0]
                 except Exception as e:
@@ -166,6 +183,7 @@ class Stock:
         :param df: pd.DataFrame which contains the scraped info
         :return: pd.DataFrame which add year info to the time
         """
+
         df['Time_to_cmp'] = df['Time'].apply(lambda x: '{}-'.format(2000) + x)
         df['Time_to_cmp'] = pd.to_datetime(df['Time_to_cmp'], format='%Y-%m-%d %H:%M')
         df['diff'] = df['Time_to_cmp'] - df['Time_to_cmp'].shift(1)
@@ -184,8 +202,9 @@ class Stock:
         links_indexs = []
         for idx in indexs:
             if not re.match('.+qa_list.aspx', df.loc[idx, 'Link']):
-                links.append(df.loc[idx, 'Link'])
-                links_indexs.append(idx)
+                if not re.match('http.+http.+', df.loc[idx, 'Link']):
+                    links.append(df.loc[idx, 'Link'])
+                    links_indexs.append(idx)
 
         """
         Scrape the year info given the links
@@ -225,7 +244,6 @@ class Stock:
                     """Last index"""
                     df.loc[links_indexs[idx]:, 'Time'] = \
                         df.loc[links_indexs[idx]:, 'Time'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
-
                 else:
                     """Not last index, we will add year info between links_indexs[idx]:links_indexs[idx+1]"""
                     df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'] =  \
@@ -243,10 +261,11 @@ def run_by_date(ticker):
     :return: None
     """
     # print('-' * 20, f'Doing {ticker}', '-' * 20)
-    try:
-        complete = False
-        max_epoch = 5
-        while (not complete) and (max_epoch >= 0):
+
+    complete = False
+    max_epoch = 5
+    while (not complete) and (max_epoch >= 0):
+        try:
             max_epoch -= 1
             stock = Stock(ticker)
             complete = stock.run()
@@ -256,19 +275,24 @@ def run_by_date(ticker):
                 # print(f'Finish Downloading {ticker}')
                 formated_df = stock.reformat_date(df)
                 formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-                filtered_df = formated_df[(formated_df['Time'] >= target_start_date) &
-                                          (formated_df['Time'] < target_end_date)]
+                filtered_df = formated_df[(formated_df['Time'] >= dates[0]) &
+                                          (formated_df['Time'] < dates[1])]
                 current_number_posts = filtered_df['Time'].count()
 
                 with processer_lock:
                     curr_list.append((ticker, current_number_posts))
 
+                return (ticker, current_number_posts)
             else:
-                with processer_lock:
-                    curr_list.append((ticker, False))
+                logging.info(f'Missing the Value of {ticker}')
 
-    except Exception as e:
-        logging.error(f'Error - {ticker} - {str(e)} - run_by_date', exc_info=True)
+        except Exception as e:
+            logging.error(f'Error - {ticker} - {str(e)} - run_by_date', exc_info=True)
+            complete = False
+            continue
+
+    return (ticker, False)
+
 
 @timer
 def run_by_multiprocesses():
@@ -276,6 +300,7 @@ def run_by_multiprocesses():
     Multiprocess function to speed up the program
     :return: None
     """
+
     if not os.path.exists('data/current_list.pkl'):
         jq.auth('18810906018', '906018')
         csi300 = jq.get_index_stocks('000300.XSHG', dt.datetime.strftime(dt.datetime.now(), format='%Y-%m-%d'))
@@ -284,32 +309,54 @@ def run_by_multiprocesses():
     else:
         with open('data/current_list.pkl', 'rb') as f:
             csi300 = pickle.load(f)
-    csi300 = [ticker.split('.')[0] for ticker in csi300]
+    csi300 = [ticker.split('.')[0] for ticker in csi300][:100]
     pool = mp.Pool(8)
     with Bar('Downloading', max=len(csi300)) as bar:
-        for _ in pool.imap_unordered(run_by_date, csi300[:100]):
+        for _ in pool.imap_unordered(run_by_date, csi300):
             bar.next()
 
 
-if __name__ == '__main__':
-    while True:
-        today = dt.datetime.now()
-        yesturday = dt.datetime.now() - dt.timedelta(1)
-        # if time.localtime().tm_hour == 14 and time.localtime().tm_min == 30:
-        if True:
-            try:
-                global target_end_date, target_start_date, curr_list
-                target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
-                target_start_date = dt.datetime(yesturday.year, yesturday.month, yesturday.day, 15)
-                curr_list = mp.Manager().list()
-                time_used = run_by_multiprocesses()
-                print(f'Time Elapsed - {time_used[1]}')
+def write_into_excel(curr_list):
+    filename = 'data/daily_summary.xlsx'
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet['A1'] = 'Ticker'
+    sheet['B1'] = 'Posts'
+    max_val = 0
+    for row_idx, row in enumerate(range(2, 2 + len(curr_list))):
+        for col_idx, col in enumerate(['A', 'B']):
+            if col == 'B':
+                sheet[f'{col}{row}'] = int(curr_list[row_idx][col_idx])
+                if int(curr_list[row_idx][col_idx]) > max_val:
+                    max_val = int(curr_list[row_idx][col_idx])
+            else:
+                sheet[f'{col}{row}'] = curr_list[row_idx][col_idx]
+    data_bar_rule = DataBarRule(start_type="num",
+                                start_value=0,
+                                end_type="num",
+                                end_value=max_val,
+                                color="0e71c7")
+    sheet.conditional_formatting.add(f"B2:B{2 + len(curr_list)}", data_bar_rule)
+    workbook.save(filename)
 
-                pd.DataFrame(np.array(curr_list),
-                             columns=['ticker', 'number of posts']).to_csv('data/today_post.csv', index=False)
-                break
-            except Exception as e:
-                logging.exception('message')
-                print(e)
-                break
+
+if __name__ == '__main__':
+    # while True:
+    today = dt.datetime.now()
+    yesturday = dt.datetime.now() - dt.timedelta(1)
+    # if time.localtime().tm_hour == 14 and time.localtime().tm_min == 30:
+    if True:
+        try:
+            target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
+            target_start_date = dt.datetime(yesturday.year, yesturday.month, yesturday.day, 15)
+            global dates, curr_list
+            dates = list([target_start_date, target_end_date])
+            curr_list = mp.Manager().list()
+            _, time_used = run_by_multiprocesses()
+            print(f'Time Elapsed - {time_used}')
+            write_into_excel(curr_list)
+
+        except Exception as e:
+            logging.exception('message')
+            print(e)
 

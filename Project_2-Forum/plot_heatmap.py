@@ -8,7 +8,7 @@ import numpy as np
 from itertools import product
 
 
-def plot(path, method, direction, signal):
+def plot(path, method, direction, signal, sentiment, ret_type):
     # csi300 = pd.read_csv('data/target_list/csi300_prices.csv', index_col=0, parse_dates=True)
     # csi300_close = csi300['Price']
     # csi300_close = csi300_close.apply(lambda row: float(''.join(re.findall('(\d)+,([\d.]+)', row)[0])))
@@ -21,6 +21,9 @@ def plot(path, method, direction, signal):
     csi300_close_ret = pd.read_csv('data/interim/equal_weight_benchmark.csv',
                                    index_col=0, parse_dates=True).iloc[:,0]
 
+    if ret_type == '_ori':
+        csi300_close_ret = pd.Series(0, index=csi300_close_ret.index, name=csi300_close_ret.name)
+
     csi300_close_ret.name = f'CSI300_cmc1'
     # count_dict = {'1':1, '5':2, '10':3}
     all_pnls = {}
@@ -29,7 +32,7 @@ def plot(path, method, direction, signal):
             for dir_path in dirs:
                 if re.match('Decile.+Counting.+', dir_path):
                     """For different folders"""
-                    decile, count = re.findall('Decile ([\d.]+) - Counting ([\d]+)', dir_path)[0]
+                    decile, count = re.findall('Decile ([\d]+) - Counting ([\d]+)', dir_path)[0]
                     decile = float(decile)
                     for file in os.listdir(os.path.join(root, dir_path)):
                         if re.match('cmc.+csv', file):
@@ -65,10 +68,10 @@ def plot(path, method, direction, signal):
                             except:
                                 # all_pnls[holding] = [(int(decile * 2) - 1, int(count_dict[count]) - 1, cum_pnl)]
                                 all_pnls[holding] = [(int(decile) - 1, int(count) - 1, cum_pnl)]
-    heatmap(all_pnls, method, direction, signal)
+    heatmap(all_pnls, method, direction, signal, sentiment, ret_type)
 
 
-def heatmap(all_pnls, method, direction, signal):
+def heatmap(all_pnls, method, direction, signal, sentiment, ret_type):
     hms = []
     all_pnls = sorted(all_pnls.items(), key=lambda x: int(re.findall('cmc([\d]+)', x[0])[0]))
     for key, value in all_pnls:
@@ -105,11 +108,11 @@ def heatmap(all_pnls, method, direction, signal):
     #         grid.add(hms[idx], grid_opts=opts.GridOpts(pos_right="60%"))
     #         page.add(grid)
     # page.render(path='figs/heatmaps.html')
-    tab = Tab(page_title=f'{method}_heatmaps_{signal}_.....{direction}'.upper())
+    tab = Tab(page_title=f'{method}_heatmaps_{signal}_{direction}_{sentiment}{ret_type}'.upper())
     keys, values = list(zip(*all_pnls))
     for key, hm in zip(keys, hms):
         tab.add(hm, key)
-    tab.render(path=f'figs/{method}_heatmaps_{signal}_{direction}.html')
+    tab.render(path=f'figs/{method}_heatmaps_{signal}_{direction}{sentiment}{ret_type}.html')
 
 
 def comp_cum_pnl(df, benchmark, direction):
@@ -137,12 +140,15 @@ def comp_cum_sharpe(df, benchmark, direction):
 
 if __name__ == '__main__':
     methods = ['pnl', 'sharpe']
-    # signals = ['rank']
-    signals = ['rank', 'change']
+    signals = ['rank']
+    # signals = ['rank', 'change']
     directions = ['long', 'short']
-    combs = product(methods, signals, directions)
+    # sentiments = ['_positive', '_negative']
+    sentiments = ['_negative_3pm', '_positive_3pm', '_3pm']
+    ret_types = ['_ori', '']
+    combs = product(methods, signals, directions, sentiments, ret_types)
 
-    for method, signal, direction in combs:
-        print(f'Doing {method} - {signal} - {direction}')
-        path = f'data/params_top_{signal}'
-        plot(path, method, direction, signal)
+    for method, signal, direction, sentiment, ret_type in combs:
+        print(f'Doing {method} - {signal} - {direction} - {sentiment} - {ret_type}')
+        path = f'data/params_top_{signal}{sentiment}'
+        plot(path, method, direction, signal, sentiment, ret_type)
