@@ -295,15 +295,10 @@ def run_by_date(ticker):
                 filtered_df = formated_df[(formated_df['Time'] >= dates[0]) &
                                           (formated_df['Time'] < dates[1])]
                 current_number_posts = filtered_df['Time'].count()
-
-<<<<<<< HEAD:Project_2-Forum/daily_routine_win.py
-                return (ticker, current_number_posts, time_web, time_parsing)
-=======
                 with processer_lock:
                     curr_list.append((ticker, current_number_posts))
 
                 return (ticker, current_number_posts)
->>>>>>> 310cc3af5f9ba82b8d66998ab4763dc0c85d61e2:Project_2-Forum/daily_routine_os.py
             else:
                 logging.info(f'Missing the Value of {ticker}')
 
@@ -331,22 +326,8 @@ def run_by_multiprocesses():
     else:
         with open('data/current_list.pkl', 'rb') as f:
             csi300 = pickle.load(f)
-<<<<<<< HEAD:Project_2-Forum/daily_routine_win.py
     csi300 = [ticker.split('.')[0] for ticker in csi300][:30]
     csi300 = ['000568']
-    results = []
-    time_parsing = 0
-    time_web = 0
-    with Bar('Downloading', max=len(csi300)) as bar:
-        with mp.Pool(4) as pool:
-            for output in pool.imap_unordered(run_by_date, zip(csi300, [dates] * len(csi300))):
-                bar.next()
-                results.append(output[:2])
-                time_web += output[2]
-                time_parsing += output[3]
-    return results, time_web, time_parsing
-=======
-    csi300 = [ticker.split('.')[0] for ticker in csi300][:100]
     pool = mp.Pool(8)
     with Bar('Downloading', max=len(csi300)) as bar:
         for _ in pool.imap_unordered(run_by_date, csi300):
@@ -374,8 +355,7 @@ def write_into_excel(curr_list):
                                 end_value=max_val,
                                 color="0e71c7")
     sheet.conditional_formatting.add(f"B2:B{2 + len(curr_list)}", data_bar_rule)
-    workbook.save(filename)
->>>>>>> 310cc3af5f9ba82b8d66998ab4763dc0c85d61e2:Project_2-Forum/daily_routine_os.py
+    workbook.save(filename)\
 
 
 if __name__ == '__main__':
@@ -389,21 +369,10 @@ if __name__ == '__main__':
             target_start_date = dt.datetime(yesturday.year, yesturday.month, yesturday.day, 15)
             global dates, curr_list
             dates = list([target_start_date, target_end_date])
-<<<<<<< HEAD:Project_2-Forum/daily_routine_win.py
-            # dates.append(target_start_date, target_end_date)
-            # curr_list = mp.Manager().list()
-            (curr_list, time_web, time_parsing), time_used = run_by_multiprocesses(dates)
-            print(f'Time Elapsed - {time_used}')
-            print(f'Time Web - {time_web}')
-            print(f'Time Parse - {time_parsing}')
-            pd.DataFrame(np.array(curr_list),
-                         columns=['ticker', 'number of posts']).to_csv('data/today_post.csv', index=False)
-=======
             curr_list = mp.Manager().list()
             _, time_used = run_by_multiprocesses()
             print(f'Time Elapsed - {time_used}')
-            write_into_excel(curr_list)
->>>>>>> 310cc3af5f9ba82b8d66998ab4763dc0c85d61e2:Project_2-Forum/daily_routine_os.py
+            write_into_excel(curr_list)\
 
         except Exception as e:
             logging.exception('message')
