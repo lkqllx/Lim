@@ -203,7 +203,7 @@ class Stock:
             print(f'Timeout - {url}')
             logging.exception(f'Timeout - {url}')
             self.req_flag.append(False)
-            # time.sleep(10)
+            time.sleep(10)
 
     def download_all_sites(self, sites):
         """
@@ -326,20 +326,45 @@ def run_update_historical_data(args):
                     lambda row: dt.datetime.strftime(row, '%Y-%m-%d'))
                 formated_df.loc[:, 'Time'] = formated_df['Datetime'].apply(
                     lambda row: dt.datetime.strftime(row, '%H:%M:%S'))
-                if not os.path.exists(f'data/daily/{ticker}.csv'):
-                    formated_df.loc[:, 'Sentiment']  = formated_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments
-                                                                          >= 0.5 else 'Negative')
-                    formated_df.to_csv(f'data/daily/{ticker}.csv', index=False, encoding='utf_8_sig')
-                    return ticker, True, time_parsing, time_web
-                else:
-                    formated_df.set_index('Datetime', inplace=True)
-                    prev_df = pd.read_csv(f'data/daily/{ticker}.csv', index_col=0, parse_dates=True)
-                    filtered_df = formated_df[(formated_df.index > prev_df.index[0])]
-                    filtered_df.loc[:, 'Sentiment']  = filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments
-                                                                          >= 0.5 else 'Negative')
+
+                if not os.path.exists(f'data/daily/{ticker}'):
+                    os.mkdir(f'data/daily/{ticker}')
+
+                all_existed_date = os.listdir(f'data/daily/{ticker}')
+                all_existed_date = [date.split('.')[0] for date in all_existed_date
+                                    if re.match('[\d]+-[\d]+-[\d]+.csv', date)]
+                if all_existed_date:
+                    """Update largest date in the folder"""
+                    max_date = max([dt.datetime.strptime(date, '%Y-%m-%d') for date in all_existed_date])
+                    max_date = max_date.strftime('%Y-%m-%d')
+                    prev_df = pd.read_csv('data/daily/{}/{}.csv'.format(ticker, max_date),
+                                          index_col=0, parse_dates=True)
+                    filtered_df = formated_df[formated_df['Date'] == max_date]
+                    filtered_df.set_index('Datetime', inplace=True)
+                    filtered_df = filtered_df[(filtered_df.index > prev_df.index[0])]
+                    filtered_df.loc[:, 'Sentiment']  = \
+                        filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments >= 0.5 else 'Negative')
                     prev_df = pd.concat([filtered_df, prev_df], sort=True)
-                    prev_df.to_csv(f'data/daily/{ticker}.csv', encoding='utf_8_sig')
-                    return ticker, True, time_parsing, time_web
+                    prev_df.to_csv(f'data/daily/{ticker}/{max_date}.csv', encoding='utf_8_sig')
+
+                date_labels = np.unique(formated_df['Date']).tolist()
+                for date in date_labels:
+                    if not date in all_existed_date:
+                        filtered_df = formated_df[formated_df['Date'] == date]
+                        filtered_df.loc[:, 'Sentiment'] = \
+                            filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments >= 0.5 else 'Negative')
+                        filtered_df.to_csv(f'data/daily/{ticker}/{date}.csv', index=False, encoding='utf_8_sig')
+
+                return ticker, True, time_parsing, time_web
+                # else:
+                #     formated_df.set_index('Datetime', inplace=True)
+                #     prev_df = pd.read_csv(f'data/daily/{ticker}.csv', index_col=0, parse_dates=True)
+                #     filtered_df = formated_df[(formated_df.index > prev_df.index[0])]
+                #     filtered_df.loc[:, 'Sentiment']  = filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments
+                #                                                           >= 0.5 else 'Negative')
+                #     prev_df = pd.concat([filtered_df, prev_df], sort=True)
+                #     prev_df.to_csv(f'data/daily/{ticker}.csv', encoding='utf_8_sig')
+                #     return ticker, True, time_parsing, time_web
             else:
                 logging.info(f'Missing the Value of {ticker}')
 
@@ -436,11 +461,22 @@ def update(num_pages, num_cores=4):
 
 def create_current_summary_table(start: dt.datetime, end: dt.datetime):
     files = os.listdir('data/daily')
-    files = [(file.split('.')[0], file) for file in files if re.match('.+.csv', file)]
+    tickers = [file for file in files if re.match('[\d]+', file)]
     info_list = []
+    date_range = pd.date_range(start= start, end=end, normalize=True)
+    date_range = [date.strftime('%Y-%m-%d') for date in date_range]
     with Bar('Creating Table', max=len(files)) as bar:
-        for ticker, file in files:
-            curr_ticker = pd.read_csv('data/daily/' + file, index_col=0, parse_dates=True)
+        for ticker in tickers:
+            for date in date_range:
+                try:
+                    try:
+                        curr_date_df = pd.read_csv(f'data/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
+                        curr_ticker = pd.concat([curr_date_df, curr_ticker])
+                    except UnboundLocalError:
+                        curr_ticker = pd.read_csv(f'data/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
+                except:
+                    print(f'Date is out of range of {ticker}')
+                    logging.exception(f'Date is out of range of {ticker}')
             curr_ticker = curr_ticker[(curr_ticker.index >= start) & (curr_ticker.index < end)]
             num_posts_pos = curr_ticker[curr_ticker['Sentiment'] == 'Positive']['Sentiment'].count()
             num_posts_neg = curr_ticker[curr_ticker['Sentiment'] == 'Negative']['Sentiment'].count()
@@ -452,6 +488,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime):
                               num_posts_pos,
                               num_posts_neg
                               ))
+            del curr_ticker
             bar.next()
 
     current_table = pd.DataFrame(info_list, columns=['Ticker', 'Date', 'Time', 'Number_of_all_posts',
@@ -469,9 +506,9 @@ if __name__ == '__main__':
     # while True:
         try:
             # if time.localtime().tm_hour == 13:
-            # update(50, num_cores=2)
+            # update(50, num_cores=4)
             # elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
-            # update(5, num_cores=8)
+            # update(5, num_cores=4)
             today = dt.datetime.now() - dt.timedelta(0)
             yesturday = dt.datetime.now() - dt.timedelta(1)
             target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
