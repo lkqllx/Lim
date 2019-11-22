@@ -15,11 +15,12 @@ import jqdatasdk as jq
 from progress.bar import Bar
 import logging
 from openpyxl import Workbook
+from snownlp import SnowNLP
 from openpyxl.styles import colors
 from openpyxl.formatting.rule import DataBarRule
 
 logging.basicConfig(filename=f'logs/daily_routine_{dt.datetime.now().year}{dt.datetime.now().month}'
-                             f'{dt.datetime.now().day}_{dt.datetime.now().hour}{dt.datetime.now().minute}.log',
+                             f'{dt.datetime.now().day}_{dt.datetime.now().hour}.log',
                     filemode='w', format='%(name)s - %(levelname)s - %(message)s', level=logging.ERROR)
 lock = threading.RLock()
 processer_lock = mp.Lock()
@@ -31,21 +32,21 @@ chrome_options.add_argument('--no-proxy-server')
 chrome_options.add_argument("--proxy-server='direct://'")
 chrome_options.add_argument("--proxy-bypass-list=*")
 
-def get_proxy():
-    proxies = []
-    url = 'https://free-proxy-list.net/'
-    web = requests.get(url)
-    soup = bs4.BeautifulSoup(web.content, 'lxml')
-    items = soup.find_all('tr')[1:]
-    for item in items:
-        cells = item.find_all('td')
-        try:
-            if cells[6].text == 'yes':
-                proxies.append(':'.join([cells[0].text, cells[1].text]))
-        except:
-            continue
-    proxies = np.random.permutation(proxies)
-    return itertools.cycle(proxies)
+# def get_proxy():
+#     proxies = []
+#     url = 'https://free-proxy-list.net/'
+#     web = requests.get(url)
+#     soup = bs4.BeautifulSoup(web.content, 'lxml')
+#     items = soup.find_all('tr')[1:]
+#     for item in items:
+#         cells = item.find_all('td')
+#         try:
+#             if cells[6].text == 'yes':
+#                 proxies.append(':'.join([cells[0].text, cells[1].text]))
+#         except:
+#             continue
+#     proxies = np.random.permutation(proxies)
+#     return itertools.cycle(proxies)
 # proxies = get_proxy()
 
 def timer(fn):
@@ -110,12 +111,9 @@ class Stock:
                 all_info = text.split('\n')
                 if not re.match('[\d]+-[\d]+.+', all_info[-1]):
                     continue
-                readings = all_info[0]
-                comments = all_info[1]
-                author = all_info[-2]
                 published_time = all_info[-1]
                 title = ''.join(all_info[2:-2])
-                self.info_list.append((published_time, title, author, readings, comments, web_base+link.get('href')))
+                self.info_list.append((published_time, title,  web_base+link.get('href')))
             except Exception as e:
                 # print(f'Parsing - {e}')
                 logging.error(f'Parsing - {e}', exc_info=True)
@@ -151,9 +149,16 @@ class Stock:
         Download all the websites and join them into a single string variable (all_in_one) for parsing
         """
         time_parsing = time.time()
-        sites = [f'http:/' \
-                 f'/guba.eastmoney.com/list,{self._ticker},f_{count}.html' for count in range(10) if count != 1]
-        self.download_all_sites(sites)
+        sites = [f'http://guba.eastmoney.com/list,{self._ticker},f_{count}.html'
+                 for count in range(self.num_pages) if count != 1]
+
+        self.req_flag = []
+        tries = 5
+        while ((not self.req_flag) or (not all(self.req_flag))) and tries >= 0:
+            self.req_flag = []
+            tries -= 1
+            self.download_all_sites(sites)
+
         all_sites = sorted(self.all_websites.items(), key=lambda x: int(x[0]))
         if len(all_sites) != len(sites):
             """Make sure that all sites are downloaded successfully"""
@@ -183,6 +188,8 @@ class Stock:
         # lock.release()
         session = self.get_session()
         try:
+            # with session.request(method='GET', url=url, timeout=30, proxies={'http': next(proxies),
+            #                                                                  'https': next(proxies)}) as response:
             with session.request(method='GET', url=url, timeout=30) as response:
                 try:
                     count = re.findall('list,[\w\d]+,f_(\d+).html', url)[0]
@@ -191,16 +198,19 @@ class Stock:
                 lock.acquire()
                 self.all_websites[count] = response.text
                 lock.release()
-        except requests.exceptions.Timeout:
+                self.req_flag.append(True)
+        except Exception as e:
             print(f'Timeout - {url}')
             logging.exception(f'Timeout - {url}')
+            self.req_flag.append(False)
+            time.sleep(10)
 
     def download_all_sites(self, sites):
         """
         Download all the pages to all_websites
         :param sites: the total sites to be scraped
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             executor.map(self.download_site, sites)
 
     def reformat_date(self, df: pd.DataFrame):
@@ -212,7 +222,7 @@ class Stock:
         :return: pd.DataFrame which add year info to the time
         """
 
-        df['Time_to_cmp'] = df['Time'].apply(lambda x: '{}-'.format(2000) + x)
+        df['Time_to_cmp'] = df['Datetime'].apply(lambda x: '{}-'.format(2000) + x)
         df['Time_to_cmp'] = pd.to_datetime(df['Time_to_cmp'], format='%Y-%m-%d %H:%M')
         df['diff'] = df['Time_to_cmp'] - df['Time_to_cmp'].shift(1)
 
@@ -242,7 +252,15 @@ class Stock:
         self.all_websites = {}
         # bar = Bar('Formatting', max=len(links))
         target_years = []
-        self.download_all_sites(links)
+        self.req_flag = []
+        tries = 5
+        while ((not self.req_flag) or (not all(self.req_flag))) and tries >= 0:
+            self.req_flag = []
+            self.all_websites = {}
+            tries -= 1
+            self.download_all_sites(links)
+
+
         # bar.finish()
 
         try:
@@ -270,57 +288,96 @@ class Stock:
             try:
                 if idx == len(links_indexs) - 1:
                     """Last index"""
-                    df.loc[links_indexs[idx]:, 'Time'] = \
-                        df.loc[links_indexs[idx]:, 'Time'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
+                    df.loc[links_indexs[idx]:, 'Datetime'] = \
+                        df.loc[links_indexs[idx]:, 'Datetime'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
                 else:
                     """Not last index, we will add year info between links_indexs[idx]:links_indexs[idx+1]"""
-                    df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'] =  \
-                        df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Time'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
+                    df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Datetime'] =  \
+                        df.loc[links_indexs[idx]:links_indexs[idx+1]-1, 'Datetime'].apply(lambda x: '{}-'.format(target_years[idx]) + x)
             except Exception as e:
                 logging.error(f'Error - {str(e)} - reformat_date - reformat_loop', exc_info=True)
                 return
         return df
 
 
-def run_by_date(args):
+def run_update_historical_data(args):
     """
     Scrape the stock info given its ticker
     :param ticker: the stock to be scraped
     :return: None
     """
     # print('-' * 20, f'Doing {ticker}', '-' * 20)
-    ticker, dates, num_pages = args
+    ticker, num_pages = args
     complete = False
     max_epoch = 5
     while (not complete) and (max_epoch >= 0):
+        max_epoch -= 1
         try:
-            max_epoch -= 1
             stock = Stock(ticker, num_pages)
             complete, time_parsing, time_web = stock.run()
             if complete:
-                df = pd.DataFrame(stock.info_list, columns=['Time', 'Title', 'Author',
-                                                            'Number of reads', 'Comments', 'Link'])
+                df = pd.DataFrame(stock.info_list, columns=['Datetime', 'Title', 'Link'])
                 # print(f'Finish Downloading {ticker}')
                 formated_df = stock.reformat_date(df)
-                formated_df['Time'] = formated_df['Time'].apply(lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
-                filtered_df = formated_df[(formated_df['Time'] >= dates[0]) &
-                                          (formated_df['Time'] < dates[1])]
-                current_number_posts = filtered_df['Time'].count()
-                if current_number_posts == 0:
-                    print(f'{ticker}')
-                return (ticker, current_number_posts, time_web, time_parsing)
+                formated_df.drop(['Time_to_cmp', 'diff', 'cmp'], axis=1, inplace=True)
+                formated_df.loc[:, 'Datetime'] = formated_df['Datetime'].apply(
+                    lambda row: dt.datetime.strptime(row, '%Y-%m-%d %H:%M'))
+                formated_df.loc[:, 'Date'] = formated_df['Datetime'].apply(
+                    lambda row: dt.datetime.strftime(row, '%Y-%m-%d'))
+                formated_df.loc[:, 'Time'] = formated_df['Datetime'].apply(
+                    lambda row: dt.datetime.strftime(row, '%H:%M:%S'))
+
+                if not os.path.exists(f'data/daily/{ticker}'):
+                    os.mkdir(f'data/daily/{ticker}')
+
+                all_existed_date = os.listdir(f'data/daily/{ticker}')
+                all_existed_date = [date.split('.')[0] for date in all_existed_date
+                                    if re.match('[\d]+-[\d]+-[\d]+.csv', date)]
+                if all_existed_date:
+                    """Update largest date in the folder"""
+                    max_date = max([dt.datetime.strptime(date, '%Y-%m-%d') for date in all_existed_date])
+                    max_date = max_date.strftime('%Y-%m-%d')
+                    prev_df = pd.read_csv('data/daily/{}/{}.csv'.format(ticker, max_date),
+                                          index_col=0, parse_dates=True)
+                    filtered_df = formated_df[formated_df['Date'] == max_date]
+                    filtered_df.set_index('Datetime', inplace=True)
+                    filtered_df = filtered_df[(filtered_df.index > prev_df.index[0])]
+                    filtered_df.loc[:, 'Sentiment']  = \
+                        filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments >= 0.5 else 'Negative')
+                    prev_df = pd.concat([filtered_df, prev_df], sort=True)
+                    prev_df.to_csv(f'data/daily/{ticker}/{max_date}.csv', encoding='utf_8_sig')
+
+                date_labels = np.unique(formated_df['Date']).tolist()
+                for date in date_labels:
+                    if not date in all_existed_date:
+                        filtered_df = formated_df[formated_df['Date'] == date]
+                        filtered_df.loc[:, 'Sentiment'] = \
+                            filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments >= 0.5 else 'Negative')
+                        filtered_df.to_csv(f'data/daily/{ticker}/{date}.csv', index=False, encoding='utf_8_sig')
+
+                return ticker, True, time_parsing, time_web
+                # else:
+                #     formated_df.set_index('Datetime', inplace=True)
+                #     prev_df = pd.read_csv(f'data/daily/{ticker}.csv', index_col=0, parse_dates=True)
+                #     filtered_df = formated_df[(formated_df.index > prev_df.index[0])]
+                #     filtered_df.loc[:, 'Sentiment']  = filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments
+                #                                                           >= 0.5 else 'Negative')
+                #     prev_df = pd.concat([filtered_df, prev_df], sort=True)
+                #     prev_df.to_csv(f'data/daily/{ticker}.csv', encoding='utf_8_sig')
+                #     return ticker, True, time_parsing, time_web
             else:
                 logging.info(f'Missing the Value of {ticker}')
 
         except Exception as e:
-            logging.error(f'Error - {ticker} - {str(e)} - run_by_date', exc_info=True)
+            max_epoch -= 1
+            logging.error(f'Error - {ticker} - {str(e)} - run_update_historical_data', exc_info=True)
             complete = False
             continue
-    return (ticker, -1, 0, 0)
+    return ticker, False, 0, 0
 
 
 @timer
-def run_by_multiprocesses(csi300, dates, num_pages):
+def run_by_historical_multiprocesses(csi300, num_pages, num_cores):
     """
     Multiprocess function to speed up the program
     :return: None
@@ -329,12 +386,12 @@ def run_by_multiprocesses(csi300, dates, num_pages):
     time_parsing = 0
     time_web = 0
     with Bar('Downloading', max=len(csi300)) as bar:
-        with mp.Pool(8) as pool:
-            for output in pool.imap_unordered(run_by_date, zip(csi300, [dates] * len(csi300), [num_pages]* len(csi300))):
+        with mp.Pool(num_cores) as pool:
+            for output in pool.imap_unordered(run_update_historical_data, zip(csi300, [num_pages] * len(csi300))):
                 bar.next()
+                time_parsing += output[2]
+                time_web += output[3]
                 results.append(output[:2])
-                time_web += output[2]
-                time_parsing += output[3]
     return results, time_web, time_parsing
 
 
@@ -362,11 +419,7 @@ def write_into_excel(curr_list):
     workbook.save(filename)
 
 
-if __name__ == '__main__':
-    # while True:
-
-    today = dt.datetime.now()
-    yesturday = dt.datetime.now() - dt.timedelta(1)
+def update(num_pages, num_cores=4):
     if not os.path.exists('data/current_list.pkl'):
         jq.auth('18810906018', '906018')
         csi300 = jq.get_index_stocks('000300.XSHG', dt.datetime.strftime(dt.datetime.now(), format='%Y-%m-%d'))
@@ -376,34 +429,91 @@ if __name__ == '__main__':
         with open('data/current_list.pkl', 'rb') as f:
             csi300 = pickle.load(f)
     csi300 = [ticker.split('.')[0] for ticker in csi300][:300]
-    # csi300 = ['000069']
-    # if time.localtime().tm_hour == 14 and time.localtime().tm_min == 30:
-    if True:
+
+    """Number of wanted pages"""
+    (curr_list, time_web, time_parsing), time_used = run_by_historical_multiprocesses(csi300, num_pages, num_cores)
+    print(f'Time Elapsed - {time_used}')
+    print(f'Time Web - {time_web}')
+    print(f'Time Parse - {time_parsing}')
+
+    """If there is any failure case, we will exclude those tickers
+    and re-run the downloading program until all True"""
+    all_succesful = all(np.not_equal(list(zip(*curr_list))[1], False))
+    succesful_list = [(ticker, download_flag) for ticker, download_flag in curr_list if download_flag != False]
+    not_succesful_list = [ticker for ticker, download_flag in curr_list if download_flag == False]
+    count = 5
+    while (not all_succesful) and count >= 0:
         try:
+            print('Failed Ticker', f'\n, '.join(not_succesful_list))
+            (new_curr_list, time_web, time_parsing), time_used = run_by_historical_multiprocesses(not_succesful_list,
+                                                                                                  num_pages, num_cores)
+            new_succesful_list = [(ticker, download_flag) for ticker, download_flag in new_curr_list if
+                                  download_flag != False]
+            succesful_list = succesful_list + new_succesful_list
+
+            """Update not_succesful_list for next epoch"""
+            not_succesful_list = [ticker for ticker, download_flag in new_curr_list if download_flag == False]
+            all_succesful = all(np.not_equal(list(zip(*new_curr_list))[1], False))
+            count -= 1
+        except:
+            count -= 1
+
+
+def create_current_summary_table(start: dt.datetime, end: dt.datetime):
+    files = os.listdir('data/daily')
+    tickers = [file for file in files if re.match('[\d]+', file)]
+    info_list = []
+    date_range = pd.date_range(start= start, end=end, normalize=True)
+    date_range = [date.strftime('%Y-%m-%d') for date in date_range]
+    with Bar('Creating Table', max=len(files)) as bar:
+        for ticker in tickers:
+            for date in date_range:
+                try:
+                    try:
+                        curr_date_df = pd.read_csv(f'data/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
+                        curr_ticker = pd.concat([curr_date_df, curr_ticker])
+                    except UnboundLocalError:
+                        curr_ticker = pd.read_csv(f'data/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
+                except:
+                    print(f'Date is out of range of {ticker}')
+                    logging.exception(f'Date is out of range of {ticker}')
+            curr_ticker = curr_ticker[(curr_ticker.index >= start) & (curr_ticker.index < end)]
+            num_posts_pos = curr_ticker[curr_ticker['Sentiment'] == 'Positive']['Sentiment'].count()
+            num_posts_neg = curr_ticker[curr_ticker['Sentiment'] == 'Negative']['Sentiment'].count()
+            num_posts_all = num_posts_pos + num_posts_neg
+            info_list.append((ticker,
+                              end.strftime('%Y-%m-%d'),
+                              end.strftime('%H-%M-%S'),
+                              num_posts_all,
+                              num_posts_pos,
+                              num_posts_neg
+                              ))
+            del curr_ticker
+            bar.next()
+
+    current_table = pd.DataFrame(info_list, columns=['Ticker', 'Date', 'Time', 'Number_of_all_posts',
+                                                     'Number_of_positive_posts', 'Number_of_negative_posts'])
+    current_table['rank'] = np.ceil(current_table['Number_of_all_posts'].rank(axis=0,
+                                                                              pct=True).mul(10)).astype(int)
+    current_table['rank_pos'] = np.ceil(current_table['Number_of_positive_posts'].rank(axis=0,
+                                                                                       pct=True).mul(10)).astype(int)
+    current_table['rank_neg'] = np.ceil(current_table['Number_of_negative_posts'].rank(axis=0,
+                                                                                       pct=True).mul(10)).astype(int)
+    current_table.to_csv('data/today_table.csv', index=False)
+
+
+if __name__ == '__main__':
+    # while True:
+        try:
+            # if time.localtime().tm_hour == 13:
+            # update(50, num_cores=4)
+            # elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
+            # update(5, num_cores=4)
+            today = dt.datetime.now() - dt.timedelta(0)
+            yesturday = dt.datetime.now() - dt.timedelta(1)
             target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
             target_start_date = dt.datetime(yesturday.year, yesturday.month, yesturday.day, 15)
-            dates = list([target_start_date, target_end_date])
-            num_pages = 50
-            (curr_list, time_web, time_parsing), time_used = run_by_multiprocesses(csi300, dates, num_pages)
-            print(f'Time Elapsed - {time_used}')
-            print(f'Time Web - {time_web}')
-            print(f'Time Parse - {time_parsing}')
-
-            """If there is any failure case, we will exclude those tickers
-            and re-run the downloading program until all True"""
-            all_succesful = all(np.not_equal(list(zip(*curr_list))[1], -1))
-            succesful_list = [(ticker, post) for ticker, post in curr_list if post != -1]
-            not_succesful_list = [ticker for ticker, post in curr_list if post == -1]
-            new_curr_list = []
-            count = 5
-            while (not all_succesful) and count >= 0:
-                print('Failed Ticker', f'\n, '.join(not_succesful_list))
-                (new_curr_list, time_web, time_parsing), time_used = run_by_multiprocesses(not_succesful_list, dates)
-                all_succesful = all(np.not_equal(list(zip(*new_curr_list))[1], -1))
-                count -= 1
-            succesful_list = succesful_list + new_curr_list
-            succesful_list = sorted(succesful_list, key=lambda x: int(x[0]))
-            write_into_excel(succesful_list)
+            create_current_summary_table(target_start_date, target_end_date)
 
         except Exception as e:
             logging.exception('message')

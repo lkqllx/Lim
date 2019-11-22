@@ -9,6 +9,21 @@ import jqdatasdk as jq
 import pickle, os, re, calendar
 from snownlp import SnowNLP
 import multiprocessing as mp
+import time
+
+
+def timer(fn):
+    """
+    Perform as a timer for function
+    :param fn: a function object
+    :return: a list -> [fn_output, elapsed_time]
+    """
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        fn_output = fn(*args, **kwargs)
+        end = time.time()
+        return [fn_output, int(end - start)]
+    return wrapper
 
 def process_rds_to_csv():
     tickers = pd.read_excel('data/target_list/csi300.xls').iloc[:, 4].values.tolist()
@@ -176,14 +191,16 @@ def masking_caps():
     market_caps.to_csv('data/fundamental/market_caps.csv')
     circulating_market_caps.to_csv('data/fundamental/circulating_market_caps.csv')
 
+@timer
 def run_by_mp(file):
     df = pd.read_csv(f'data/historical/2019-10-15/{file}', low_memory=False)
     df['sentiment'] = 0.5
-    for idx, text in enumerate(df['Title']):
+    for idx, text in enumerate(df['Title'].values):
         try:
             df.loc[idx, 'sentiment'] = SnowNLP(text).sentiments
         except:
             continue
+    print(df)
     df.to_csv(f'data/historical/sentiment/{file}', encoding='utf_8_sig', index=False)
 
 
@@ -227,7 +244,7 @@ def add_sentiment_label():
 
 if __name__ == '__main__':
     # jq.auth('18810906018', '906018')
-    extract_excess_returns_to_r()
+    # extract_excess_returns_to_r()
     # download_members()
     # download_prices_from_jq()
     # check_members()
@@ -237,3 +254,5 @@ if __name__ == '__main__':
     # add_sentiment_to_posts()
     # create_new_benchmark()
     # add_sentiment_label()
+    (_, time_used) = run_by_mp('000002.csv')
+    print(time_used)
