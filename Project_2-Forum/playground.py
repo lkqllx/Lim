@@ -25,60 +25,37 @@ import sys
 #     print('Successful!')
 #     print(f'Input - {sys.argv[1]}')
 
-<<<<<<< HEAD
-import requests, bs4,itertools
-import numpy as np
 
-def get_proxy():
-    proxies = []
-    url = 'https://free-proxy-list.net/'
-    web = requests.get(url)
-    soup = bs4.BeautifulSoup(web.content, 'html')
-    items = soup.find_all('tr')[1:]
-    for item in items:
-        cells = item.find_all('td')
-        try:
-            if cells[6].text == 'yes':
-                proxies.append(':'.join([cells[0].text, cells[1].text]))
-        except:
-            continue
-    proxies = np.random.permutation(proxies)
-    return itertools.cycle(proxies)
+# import requests, bs4,itertools
+# import numpy as np
+#
+# def get_proxy():
+#     proxies = []
+#     url = 'https://free-proxy-list.net/'
+#     web = requests.get(url)
+#     soup = bs4.BeautifulSoup(web.content, 'html')
+#     items = soup.find_all('tr')[1:]
+#     for item in items:
+#         cells = item.find_all('td')
+#         try:
+#             if cells[6].text == 'yes':
+#                 proxies.append(':'.join([cells[0].text, cells[1].text]))
+#         except:
+#             continue
+#     proxies = np.random.permutation(proxies)
+#     return itertools.cycle(proxies)
 
-get_proxy()
-=======
-# while True:
-#     print('Successful!')
-#     print(f'Input - {sys.argv[1]}')
 
-from openpyxl import Workbook
-from openpyxl.styles import colors
-from openpyxl.formatting.rule import DataBarRule
-curr_list = [['li', 1],
-             ['li2', 2],
-             ['li3', 3],
-             ['li4', 4],
-             ['li5', 5],
-             ['li6', 6]]
-filename = 'text.xlsx'
-workbook = Workbook()
-new_sheet = workbook.active
-new_sheet['A1'] = 'Ticker'
-new_sheet['B1'] = 'Posts'
-max_val = 0
-for row_idx, row in enumerate(range(2, 2 + len(curr_list))):
-    for col_idx, col in enumerate(['A', 'B']):
-        if col == 'B':
-            new_sheet[f'{col}{row}'] = int(curr_list[row_idx][col_idx])
-            if int(curr_list[row_idx][col_idx]) > max_val:
-                max_val = int(curr_list[row_idx][col_idx])
-        else:
-            new_sheet[f'{col}{row}'] = curr_list[row_idx][col_idx]
-data_bar_rule = DataBarRule(start_type="num",
-                            start_value=0,
-                            end_type="num",
-                            end_value=max_val,
-                            color="0e71c7")
-new_sheet.conditional_formatting.add(f"B2:B{2 + len(curr_list)}", data_bar_rule)
-workbook.save(filename)
->>>>>>> 310cc3af5f9ba82b8d66998ab4763dc0c85d61e2
+
+from sqlalchemy import create_engine
+server = 'LIMHKDWH01S'
+user = 'andrew.li'
+password = 'an@lim355'
+DB = {'servername': server,
+      'database': 'FORUM_DB',
+      'driver': 'driver=SQL Server Native Client 11.0'}
+engine = create_engine(f'mssql+pyodbc://{user}:{password}@' + DB['servername'] + '/' + DB['database'] + "?" + DB['driver'])
+df = pd.read_excel('data/today_table.xlsx', converters={'Ticker': lambda x: x.zfill(6)})
+df['Ticker'] = df['Ticker'].astype('str')
+df.to_sql('daily_table', engine, if_exists='replace', index=False)
+print()

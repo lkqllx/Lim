@@ -173,6 +173,60 @@ class Stock:
         time_parsing = int(time.time() - time_parsing)
         return True, time_parsing, time_web
 
+    def run_by_one_page(self):
+        """
+        For the stock, function will require all the pages and parse the website
+        :return: True/False indicating that whether the stock is acquired successfully or not
+        """
+        start = time.time()
+        new_thread = threading.Thread(target=self.call_webdriver, daemon=True)
+        new_thread.start()
+        time_web = int(time.time() - start)
+        """
+        Download all the websites and join them into a single string variable (all_in_one) for parsing
+        """
+        time_parsing = time.time()
+
+        max_pages = 20
+        download_complete = False
+        count = 0
+
+        dates = os.listdir(f'data/daily/{self._ticker}')
+        dates = [dt.datetime.strptime(date.split('.')[0], '%Y-%m-%d') for date in dates
+                 if re.match('[\d]+-[\d]+-[\d]+.csv', date)]
+        max_date = max(dates).strftime('%Y-%m-%d')
+        df = pd.read_csv(f'data/daily/{self._ticker}/{max_date}.csv', index_col=0, parse_dates=True)
+        latest_data = df.index[0]
+        while (not download_complete) and (max_pages >= 1):
+            if count == 1:
+                count += 1
+                continue
+            sites = [f'http://guba.eastmoney.com/list,{self._ticker},f_{count}.html']
+
+            self.req_flag = []
+            tries = 5
+            while ((not self.req_flag) or (not all(self.req_flag))) and tries >= 0:
+                self.req_flag = []
+                tries -= 1
+                self.download_all_sites(sites)
+
+            page = self.all_websites[f'{count}']
+            successful, time_elapsed = self.parsing(page)
+            if not successful:
+                return False, 0, 0
+
+            curr_page_time = dt.datetime.strptime(str(dt.datetime.now().year) +
+                                                  '-' + self.info_list[-1][0], '%Y-%m-%d %H:%M')
+            if curr_page_time < latest_data:
+                """If the lastest time in DB is larger than the time in the current page,
+                we do not need to download further pages"""
+                download_complete = True
+
+            count += 1
+
+        time_parsing = int(time.time() - time_parsing)
+        return True, time_parsing, time_web
+
     def get_session(self):
         if not hasattr(self.thread_local, "session"):
             self.thread_local.session = requests.Session()
@@ -200,7 +254,7 @@ class Stock:
                 lock.release()
                 self.req_flag.append(True)
         except Exception as e:
-            print(f'Timeout - {url}')
+            # print(f'Timeout - {url}').
             logging.exception(f'Timeout - {url}')
             self.req_flag.append(False)
             time.sleep(10)
@@ -314,10 +368,12 @@ def run_update_historical_data(args):
         max_epoch -= 1
         try:
             stock = Stock(ticker, num_pages)
-            complete, time_parsing, time_web = stock.run()
+            if num_pages != -1:
+                complete, time_parsing, time_web = stock.run()
+            else:
+                complete, time_parsing, time_web = stock.run_by_one_page()
             if complete:
                 df = pd.DataFrame(stock.info_list, columns=['Datetime', 'Title', 'Link'])
-                # print(f'Finish Downloading {ticker}')
                 formated_df = stock.reformat_date(df)
                 formated_df.drop(['Time_to_cmp', 'diff', 'cmp'], axis=1, inplace=True)
                 formated_df.loc[:, 'Datetime'] = formated_df['Datetime'].apply(
@@ -475,44 +531,60 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime):
                     except UnboundLocalError:
                         curr_ticker = pd.read_csv(f'data/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
                 except:
-                    print(f'Date is out of range of {ticker}')
-                    logging.exception(f'Date is out of range of {ticker}')
-            curr_ticker = curr_ticker[(curr_ticker.index >= start) & (curr_ticker.index < end)]
-            num_posts_pos = curr_ticker[curr_ticker['Sentiment'] == 'Positive']['Sentiment'].count()
-            num_posts_neg = curr_ticker[curr_ticker['Sentiment'] == 'Negative']['Sentiment'].count()
+                    logging.exception(f'Out-of-Range {date}-{ticker}')
+                    continue
+            lookback_1 = curr_ticker[(curr_ticker.index >= start + dt.timedelta(9)) & (curr_ticker.index < end)]
+            lookback_8 = curr_ticker[(curr_ticker.index >= start + dt.timedelta(2)) & (curr_ticker.index < end)]
+            lookback_10 = curr_ticker[(curr_ticker.index >= start) & (curr_ticker.index < end)]
+            num_posts_pos = lookback_1[lookback_1['Sentiment'] == 'Positive']['Sentiment'].count()
+            num_posts_neg = lookback_1[lookback_1['Sentiment'] == 'Negative']['Sentiment'].count()
             num_posts_all = num_posts_pos + num_posts_neg
+
+            num_posts_neg_8 = lookback_8[lookback_8['Sentiment'] == 'Negative']['Sentiment'].count()
+            num_posts_all_10 = lookback_10['Sentiment'].count()
+
             info_list.append((ticker,
                               end.strftime('%Y-%m-%d'),
                               end.strftime('%H-%M-%S'),
                               num_posts_all,
                               num_posts_pos,
-                              num_posts_neg
+                              num_posts_neg,
+                              num_posts_neg_8,
+                              num_posts_all_10
                               ))
             del curr_ticker
             bar.next()
 
-    current_table = pd.DataFrame(info_list, columns=['Ticker', 'Date', 'Time', 'Number_of_all_posts',
-                                                     'Number_of_positive_posts', 'Number_of_negative_posts'])
-    current_table['rank'] = np.ceil(current_table['Number_of_all_posts'].rank(axis=0,
+    current_table = pd.DataFrame(info_list, columns=['Ticker', 'Date', 'Time',
+                                                     'Number_of_all_posts_lookback_1',
+                                                     'Number_of_positive_posts_lookback_1',
+                                                     'Number_of_negative_posts_lookback_1',
+                                                     'Number_of_negative_posts_lookback_8',
+                                                     'Number_of_all_posts_lookback_10',])
+    current_table['rank_all'] = np.ceil(current_table['Number_of_all_posts_lookback_1'].rank(axis=0,
                                                                               pct=True).mul(10)).astype(int)
-    current_table['rank_pos'] = np.ceil(current_table['Number_of_positive_posts'].rank(axis=0,
+    current_table['rank_pos'] = np.ceil(current_table['Number_of_positive_posts_lookback_1'].rank(axis=0,
                                                                                        pct=True).mul(10)).astype(int)
-    current_table['rank_neg'] = np.ceil(current_table['Number_of_negative_posts'].rank(axis=0,
+    current_table['rank_neg'] = np.ceil(current_table['Number_of_negative_posts_lookback_1'].rank(axis=0,
                                                                                        pct=True).mul(10)).astype(int)
-    current_table.to_csv('data/today_table.csv', index=False)
+    current_table['rank_neg_8'] = np.ceil(current_table['Number_of_negative_posts_lookback_8'].rank(axis=0,
+                                                                                         pct=True).mul(10)).astype(int)
+    current_table['rank_all_10'] = np.ceil(current_table['Number_of_all_posts_lookback_10'].rank(axis=0,pct=True)
+                                                                                                .mul(10)).astype(int)
+    current_table.to_excel('data/today_table.xlsx', index=False)
 
 
 if __name__ == '__main__':
     # while True:
         try:
             # if time.localtime().tm_hour == 13:
-            # update(50, num_cores=4)
+            # update(15, num_cores=2)
             # elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
-            # update(5, num_cores=4)
-            today = dt.datetime.now() - dt.timedelta(0)
-            yesturday = dt.datetime.now() - dt.timedelta(1)
+            update(-1, num_cores=4)  # If num_pages = -1, we will update the info page by page
+            today = dt.datetime.now()
+            prev_date = dt.datetime.now() - dt.timedelta(10)
             target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
-            target_start_date = dt.datetime(yesturday.year, yesturday.month, yesturday.day, 15)
+            target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
             create_current_summary_table(target_start_date, target_end_date)
 
         except Exception as e:
