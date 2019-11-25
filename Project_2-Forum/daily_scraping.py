@@ -191,11 +191,12 @@ class Stock:
         download_complete = False
         count = 0
 
-        dates = os.listdir(f'data/daily/{self._ticker}')
+        dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily/{self._ticker}')
         dates = [dt.datetime.strptime(date.split('.')[0], '%Y-%m-%d') for date in dates
                  if re.match('[\d]+-[\d]+-[\d]+.csv', date)]
         max_date = max(dates).strftime('%Y-%m-%d')
-        df = pd.read_csv(f'data/daily/{self._ticker}/{max_date}.csv', index_col=0, parse_dates=True)
+        df = pd.read_csv(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily'
+                         f'/{self._ticker}/{max_date}.csv', index_col=0, parse_dates=True)
         latest_data = df.index[0]
         while (not download_complete) and (max_pages >= 1):
             if count == 1:
@@ -383,17 +384,19 @@ def run_update_historical_data(args):
                 formated_df.loc[:, 'Time'] = formated_df['Datetime'].apply(
                     lambda row: dt.datetime.strftime(row, '%H:%M:%S'))
 
-                if not os.path.exists(f'data/daily/{ticker}'):
-                    os.mkdir(f'data/daily/{ticker}')
+                if not os.path.exists(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily/{ticker}'):
+                    os.mkdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily/{ticker}')
 
-                all_existed_date = os.listdir(f'data/daily/{ticker}')
+                all_existed_date = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/'
+                                              f'daily/{ticker}')
                 all_existed_date = [date.split('.')[0] for date in all_existed_date
                                     if re.match('[\d]+-[\d]+-[\d]+.csv', date)]
                 if all_existed_date:
                     """Update largest date in the folder"""
                     max_date = max([dt.datetime.strptime(date, '%Y-%m-%d') for date in all_existed_date])
                     max_date = max_date.strftime('%Y-%m-%d')
-                    prev_df = pd.read_csv('data/daily/{}/{}.csv'.format(ticker, max_date),
+                    prev_df = pd.read_csv('//fileserver01/limdata/data/individual staff folders/andrew li/daily/'
+                                          '{}/{}.csv'.format(ticker, max_date),
                                           index_col=0, parse_dates=True)
                     filtered_df = formated_df[formated_df['Date'] == max_date]
                     filtered_df.set_index('Datetime', inplace=True)
@@ -401,7 +404,8 @@ def run_update_historical_data(args):
                     filtered_df.loc[:, 'Sentiment']  = \
                         filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments >= 0.5 else 'Negative')
                     prev_df = pd.concat([filtered_df, prev_df], sort=True)
-                    prev_df.to_csv(f'data/daily/{ticker}/{max_date}.csv', encoding='utf_8_sig')
+                    prev_df.to_csv(f'//fileserver01/limdata/data/individual staff folders/andrew li/'
+                                   f'daily/{ticker}/{max_date}.csv', encoding='utf_8_sig')
 
                 date_labels = np.unique(formated_df['Date']).tolist()
                 for date in date_labels:
@@ -409,7 +413,8 @@ def run_update_historical_data(args):
                         filtered_df = formated_df[formated_df['Date'] == date]
                         filtered_df.loc[:, 'Sentiment'] = \
                             filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments >= 0.5 else 'Negative')
-                        filtered_df.to_csv(f'data/daily/{ticker}/{date}.csv', index=False, encoding='utf_8_sig')
+                        filtered_df.to_csv(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily'
+                                           f'/{ticker}/{date}.csv', index=False, encoding='utf_8_sig')
 
                 return ticker, True, time_parsing, time_web
                 # else:
@@ -515,8 +520,8 @@ def update(num_pages, num_cores=4):
             count -= 1
 
 
-def create_current_summary_table(start: dt.datetime, end: dt.datetime):
-    files = os.listdir('data/daily')
+def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: str):
+    files = os.listdir('//fileserver01/limdata/data/individual staff folders/andrew li/daily')
     tickers = [file for file in files if re.match('[\d]+', file)]
     info_list = []
     date_range = pd.date_range(start= start, end=end, normalize=True)
@@ -526,10 +531,12 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime):
             for date in date_range:
                 try:
                     try:
-                        curr_date_df = pd.read_csv(f'data/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
+                        curr_date_df = pd.read_csv(f'//fileserver01/limdata/data/individual staff folders/'
+                                                   f'andrew li/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
                         curr_ticker = pd.concat([curr_date_df, curr_ticker])
                     except UnboundLocalError:
-                        curr_ticker = pd.read_csv(f'data/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
+                        curr_ticker = pd.read_csv(f'//fileserver01/limdata/data/individual staff folders/'
+                                                   f'andrew li/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
                 except:
                     logging.exception(f'Out-of-Range {date}-{ticker}')
                     continue
@@ -556,36 +563,54 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime):
             bar.next()
 
     current_table = pd.DataFrame(info_list, columns=['Ticker', 'Date', 'Time',
-                                                     'Number_of_all_posts_lookback_1',
-                                                     'Number_of_positive_posts_lookback_1',
-                                                     'Number_of_negative_posts_lookback_1',
-                                                     'Number_of_negative_posts_lookback_8',
-                                                     'Number_of_all_posts_lookback_10',])
-    current_table['rank_all'] = np.ceil(current_table['Number_of_all_posts_lookback_1'].rank(axis=0,
-                                                                              pct=True).mul(10)).astype(int)
-    current_table['rank_pos'] = np.ceil(current_table['Number_of_positive_posts_lookback_1'].rank(axis=0,
-                                                                                       pct=True).mul(10)).astype(int)
-    current_table['rank_neg'] = np.ceil(current_table['Number_of_negative_posts_lookback_1'].rank(axis=0,
-                                                                                       pct=True).mul(10)).astype(int)
-    current_table['rank_neg_8'] = np.ceil(current_table['Number_of_negative_posts_lookback_8'].rank(axis=0,
-                                                                                         pct=True).mul(10)).astype(int)
-    current_table['rank_all_10'] = np.ceil(current_table['Number_of_all_posts_lookback_10'].rank(axis=0,pct=True)
-                                                                                                .mul(10)).astype(int)
-    current_table.to_excel('data/today_table.xlsx', index=False)
+                                                     'Num_all_1',
+                                                     'Num_pos_1',
+                                                     'Num_neg_1',
+                                                     'Num_neg_8',
+                                                     'Num_all_10',])
+    current_table['Rank_all'] = np.ceil(current_table['Num_all_1'].rank(axis=0, pct=True).mul(10)).astype(int)
+    current_table['Rank_pos'] = np.ceil(current_table['Num_pos_1'].rank(axis=0, pct=True).mul(10)).astype(int)
+    current_table['Rank_neg'] = np.ceil(current_table['Num_neg_1'].rank(axis=0, pct=True).mul(10)).astype(int)
+    current_table['Rank_neg_8'] = np.ceil(current_table['Num_neg_8'].rank(axis=0, pct=True).mul(10)).astype(int)
+    current_table['Rank_all_10'] = np.ceil(current_table['Num_all_10'].rank(axis=0,pct=True).mul(10)).astype(int)
+
+    curr_Date = end.strftime('%Y-%m-%d')
+    current_table.to_excel(f'//fileserver01/limdata/data/'
+                           f'individual staff folders/andrew li/table_{_time}_{curr_Date}.xlsx', index=False)
+    save_tosql(current_table, _time)
+
+def save_tosql(df, which_table):
+    from sqlalchemy import create_engine
+    server = 'LIMHKDWH01S'
+    user = 'andrew.li'
+    password = 'an@lim355'
+    DB = {'servername': server,
+          'database': 'FORUM_DB',
+          'driver': 'driver=SQL Server Native Client 11.0'}
+    engine = create_engine(
+        f'mssql+pyodbc://{user}:{password}@' + DB['servername'] + '/' + DB['database'] + "?" + DB['driver'])
+    df['Ticker'] = df['Ticker'].astype('str')
+    df.to_sql(f'table_{which_table}', engine, if_exists='append', index=False)
 
 
 if __name__ == '__main__':
-    # while True:
+    while True:
         try:
-            # if time.localtime().tm_hour == 13:
-            # update(15, num_cores=2)
-            # elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
-            update(-1, num_cores=4)  # If num_pages = -1, we will update the info page by page
-            today = dt.datetime.now()
-            prev_date = dt.datetime.now() - dt.timedelta(10)
-            target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
-            target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
-            create_current_summary_table(target_start_date, target_end_date)
+            if time.localtime().tm_hour == 13 and (time.localtime().tm_min == 0):
+                update(15, num_cores=2)
+                today = dt.datetime.now()
+                prev_date = dt.datetime.now() - dt.timedelta(10)
+                target_end_date = dt.datetime(today.year, today.month, today.day, 13)
+                target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
+                create_current_summary_table(target_start_date, target_end_date, '1PM')
+            elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
+                update(-1, num_cores=4)  # If num_pages = -1, we will update the info page by page
+                today = dt.datetime.now()
+                prev_date = dt.datetime.now() - dt.timedelta(10)
+                target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
+                target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
+                create_current_summary_table(target_start_date, target_end_date, '2:30PM')
+            time.sleep(30)
 
         except Exception as e:
             logging.exception('message')

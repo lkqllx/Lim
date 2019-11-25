@@ -55,7 +55,7 @@ DB = {'servername': server,
       'database': 'FORUM_DB',
       'driver': 'driver=SQL Server Native Client 11.0'}
 engine = create_engine(f'mssql+pyodbc://{user}:{password}@' + DB['servername'] + '/' + DB['database'] + "?" + DB['driver'])
-df = pd.read_excel('data/today_table.xlsx', converters={'Ticker': lambda x: x.zfill(6)})
+df = pd.read_excel('//fileserver01/limdata/data/individual staff folders/andrew li/today_table.xlsx', converters={'Ticker': lambda x: x.zfill(6)})
 df['Ticker'] = df['Ticker'].astype('str')
-df.to_sql('daily_table', engine, if_exists='replace', index=False)
+df.to_sql('daily_table', engine, if_exists='append', index=False)
 print()
