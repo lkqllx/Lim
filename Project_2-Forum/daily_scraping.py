@@ -577,7 +577,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
     curr_Date = end.strftime('%Y-%m-%d')
     current_table.to_excel(f'//fileserver01/limdata/data/'
                            f'individual staff folders/andrew li/table_{_time}_{curr_Date}.xlsx', index=False)
-    # save_tosql(current_table, _time)
+    save_tosql(current_table, _time)
 
 def save_tosql(df, which_table):
     from sqlalchemy import create_engine
