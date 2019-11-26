@@ -34,17 +34,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 > **Concurrency**: 1 Processes and 1 Thread are used, which means that each process can only send 1 request to the remote sever at a single time point.
 
-\newpage
+<!-- \newpage -->
 
-## Work Flow
-As shown below, the main process will distribute the tickers to sub-processes and each sub-process will create threads to request web page and wait for response independently. After having the complete information, the data will be formatted by each sub-process.
+<!-- ## Work Flow -->
+<!-- As shown below, the main process will distribute the tickers to sub-processes and each sub-process will create threads to request web page and wait for response independently. After having the complete information, the data will be formatted by each sub-process. -->
 
-```{r fig.width=8, fig.height=5,echo=FALSE}
-library(png)
-library(grid)
-img <- readPNG("flow.png")
- grid.raster(img)
-```
+<!-- ```{r fig.width=8, fig.height=5,echo=FALSE} -->
+<!-- library(png) -->
+<!-- library(grid) -->
+<!-- img <- readPNG("flow.png") -->
+<!--  grid.raster(img) -->
+<!-- ``` -->
 
 ## Execution
 1. install python3.6 through [here](https://www.python.org/downloads/release/python-368/)
