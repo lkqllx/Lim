@@ -144,7 +144,7 @@ class Stock:
         start = time.time()
         new_thread = threading.Thread(target=self.call_webdriver, daemon=True)
         new_thread.start()
-        time_web = int(time.time() - start)
+
         """
         Download all the websites and join them into a single string variable (all_in_one) for parsing
         """
@@ -158,7 +158,7 @@ class Stock:
             self.req_flag = []
             tries -= 1
             self.download_all_sites(sites)
-
+        time_web = int(time.time() - start)
         all_sites = sorted(self.all_websites.items(), key=lambda x: int(x[0]))
         if len(all_sites) != len(sites):
             """Make sure that all sites are downloaded successfully"""
@@ -181,7 +181,7 @@ class Stock:
         start = time.time()
         new_thread = threading.Thread(target=self.call_webdriver, daemon=True)
         new_thread.start()
-        time_web = int(time.time() - start)
+
         """
         Download all the websites and join them into a single string variable (all_in_one) for parsing
         """
@@ -210,7 +210,7 @@ class Stock:
                 self.req_flag = []
                 tries -= 1
                 self.download_all_sites(sites)
-
+            time_web = int(time.time() - start)
             page = self.all_websites[f'{count}']
             successful, time_elapsed = self.parsing(page)
             if not successful:
@@ -577,7 +577,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
     curr_Date = end.strftime('%Y-%m-%d')
     current_table.to_excel(f'//fileserver01/limdata/data/'
                            f'individual staff folders/andrew li/table_{_time}_{curr_Date}.xlsx', index=False)
-    save_tosql(current_table, _time)
+    # save_tosql(current_table, _time)
 
 def save_tosql(df, which_table):
     from sqlalchemy import create_engine
@@ -603,8 +603,8 @@ if __name__ == '__main__':
                 target_end_date = dt.datetime(today.year, today.month, today.day, 13)
                 target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
                 create_current_summary_table(target_start_date, target_end_date, '1PM')
-            elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
-                update(-1, num_cores=4)  # If num_pages = -1, we will update the info page by page
+            elif (time.localtime().tm_hour == 9) and (time.localtime().tm_min == 2):
+                update(-1, num_cores=8)  # If num_pages = -1, we will update the info page by page
                 today = dt.datetime.now()
                 prev_date = dt.datetime.now() - dt.timedelta(10)
                 target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
