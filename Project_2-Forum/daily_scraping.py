@@ -74,7 +74,7 @@ class Stock:
         -> issued time
     """
 
-    def __init__(self, ticker, num_pages):
+    def __init__(self, ticker, num_pages, num_thread):
         self._ticker = ticker
         self.info_list = []
         self.time_req = 0
@@ -82,6 +82,7 @@ class Stock:
         self.all_websites = {}
         self.thread_local = threading.local()
         self.num_pages = num_pages
+        self.num_thread = num_thread
 
     @staticmethod
     @timer
@@ -267,7 +268,7 @@ class Stock:
         Download all the pages to all_websites
         :param sites: the total sites to be scraped
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.num_thread) as executor:
             executor.map(self.download_site, sites)
 
     def reformat_date(self, df: pd.DataFrame):
@@ -364,13 +365,13 @@ def run_update_historical_data(args):
     :return: None
     """
     # print('-' * 20, f'Doing {ticker}', '-' * 20)
-    ticker, num_pages = args
+    ticker, num_pages, num_thread = args
     complete = False
     max_epoch = 5
     while (not complete) and (max_epoch >= 0):
         max_epoch -= 1
         try:
-            stock = Stock(ticker, num_pages)
+            stock = Stock(ticker, num_pages, num_thread)
             if num_pages != -1:
                 complete, time_parsing, time_web = stock.run()
             else:
@@ -440,7 +441,7 @@ def run_update_historical_data(args):
 
 
 @timer
-def run_by_historical_multiprocesses(csi300, num_pages, num_cores):
+def run_by_historical_multiprocesses(csi300, num_pages, num_cores, num_thread):
     """
     Multiprocess function to speed up the program
     :return: None
@@ -450,7 +451,8 @@ def run_by_historical_multiprocesses(csi300, num_pages, num_cores):
     time_web = 0
     with Bar('Downloading', max=len(csi300)) as bar:
         with mp.Pool(num_cores) as pool:
-            for output in pool.imap_unordered(run_update_historical_data, zip(csi300, [num_pages] * len(csi300))):
+            for output in pool.imap_unordered(run_update_historical_data, zip(csi300, [num_pages] * len(csi300),
+                                                                              [num_thread] * len(csi300))):
                 bar.next()
                 time_parsing += output[2]
                 time_web += output[3]
@@ -482,7 +484,7 @@ def write_into_excel(curr_list):
     workbook.save(filename)
 
 
-def update(num_pages, num_cores=4):
+def update(num_pages, num_cores=4, num_thread=5):
     if not os.path.exists('data/current_list.pkl'):
         jq.auth('18810906018', '906018')
         csi300 = jq.get_index_stocks('000300.XSHG', dt.datetime.strftime(dt.datetime.now(), format='%Y-%m-%d'))
@@ -494,7 +496,8 @@ def update(num_pages, num_cores=4):
     csi300 = [ticker.split('.')[0] for ticker in csi300][:300]
 
     """Number of wanted pages"""
-    (curr_list, time_web, time_parsing), time_used = run_by_historical_multiprocesses(csi300, num_pages, num_cores)
+    (curr_list, time_web, time_parsing), time_used = run_by_historical_multiprocesses(csi300, num_pages,
+                                                                                      num_cores, num_thread)
     print(f'Time Elapsed - {time_used}')
     print(f'Time Web - {time_web}')
     print(f'Time Parse - {time_parsing}')
@@ -599,14 +602,14 @@ if __name__ == '__main__':
     while True:
         try:
             if time.localtime().tm_hour == 13 and (time.localtime().tm_min == 0):
-                update(15, num_cores=2)
+                update(-1, num_cores=1, num_thread=1)
                 today = dt.datetime.now()
                 prev_date = dt.datetime.now() - dt.timedelta(10)
                 target_end_date = dt.datetime(today.year, today.month, today.day, 13)
                 target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
                 create_current_summary_table(target_start_date, target_end_date, '1PM')
             elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
-                update(-1, num_cores=4)  # If num_pages = -1, we will update the info page by page
+                update(-1, num_cores=1, num_thread=1)  # If num_pages = -1, we will update the info page by page
                 today = dt.datetime.now()
                 prev_date = dt.datetime.now() - dt.timedelta(10)
                 target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
