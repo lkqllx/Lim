@@ -596,25 +596,25 @@ def save_tosql(df, which_table):
 
 
 if __name__ == '__main__':
-    # while True:
-    #     try:
-    #         if time.localtime().tm_hour == 13 and (time.localtime().tm_min == 0):
-    #             update(15, num_cores=2)
-    #             today = dt.datetime.now()
-    #             prev_date = dt.datetime.now() - dt.timedelta(10)
-    #             target_end_date = dt.datetime(today.year, today.month, today.day, 13)
-    #             target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
-    #             create_current_summary_table(target_start_date, target_end_date, '1PM')
-    #         elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
-    #             update(-1, num_cores=4)  # If num_pages = -1, we will update the info page by page
+    while True:
+        try:
+            if time.localtime().tm_hour == 13 and (time.localtime().tm_min == 0):
+                update(15, num_cores=2)
+                today = dt.datetime.now()
+                prev_date = dt.datetime.now() - dt.timedelta(10)
+                target_end_date = dt.datetime(today.year, today.month, today.day, 13)
+                target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
+                create_current_summary_table(target_start_date, target_end_date, '1PM')
+            elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
+                update(-1, num_cores=4)  # If num_pages = -1, we will update the info page by page
                 today = dt.datetime.now()
                 prev_date = dt.datetime.now() - dt.timedelta(10)
                 target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
                 target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
                 create_current_summary_table(target_start_date, target_end_date, '2-30PM')
-    #         time.sleep(30)
-    #
-    #     except Exception as e:
-    #         logging.exception('message')
-    #         print(e)
+            time.sleep(30)
+
+        except Exception as e:
+            logging.exception('message')
+            print(e)
 
