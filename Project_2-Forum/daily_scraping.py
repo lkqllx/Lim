@@ -16,6 +16,8 @@ from progress.bar import Bar
 import logging
 from openpyxl import Workbook
 from snownlp import SnowNLP
+from calendra.asia import hong_kong
+cal = hong_kong.HongKong()
 from openpyxl.styles import colors
 from openpyxl.formatting.rule import DataBarRule
 
@@ -124,7 +126,7 @@ class Stock:
     def call_webdriver(self):
         first_page = f'http://guba.eastmoney.com/list,{self._ticker}.html'  # Use selenium to get the total pages
         try:
-            with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
+            with webdriver.Chrome('C:/webdriver/chromedriver', options=chrome_options) as driver:
                 driver.set_page_load_timeout(15)
                 driver.get(first_page)
                 soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
@@ -529,11 +531,11 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
     files = os.listdir('//fileserver01/limdata/data/individual staff folders/andrew li/daily')
     tickers = [file for file in files if re.match('[\d]+', file)]
     info_list = []
-    date_range = pd.date_range(start= start, end=end, normalize=True)
-    date_range = [date.strftime('%Y-%m-%d') for date in date_range]
-    with Bar('Creating Table', max=len(files)) as bar:
+    date_range = pd.date_range(start=start, end=end, normalize=True)
+    date_range_str = [date.strftime('%Y-%m-%d') for date in date_range]
+    with Bar(f'Creating Table {date_range_str[-1]}', max=len(files)) as bar:
         for ticker in tickers:
-            for date in date_range:
+            for date in date_range_str:
                 try:
                     try:
                         curr_date_df = pd.read_csv(f'//fileserver01/limdata/data/individual staff folders/'
@@ -545,7 +547,18 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
                 except:
                     logging.exception(f'Out-of-Range {date}-{ticker}')
                     continue
-            lookback_1 = curr_ticker[(curr_ticker.index >= start + dt.timedelta(9)) & (curr_ticker.index < end)]
+
+            """Compute the most recent available date and cumulate the posts 
+            Monday's 2:30PM posts = previous Friday 3PM - Monday 2:30PM"""
+            date_range = date_range[::-1]
+            count_non_working_day = 0
+            for past_date in date_range[1:]:
+                count_non_working_day += 1
+                if cal.is_working_day(past_date):
+                    break
+
+            lookback_1 = curr_ticker[(curr_ticker.index >= start + dt.timedelta(10 - count_non_working_day)) &
+                                     (curr_ticker.index < end)]
             lookback_8 = curr_ticker[(curr_ticker.index >= start + dt.timedelta(2)) & (curr_ticker.index < end)]
             lookback_10 = curr_ticker[(curr_ticker.index >= start) & (curr_ticker.index < end)]
             num_posts_pos = lookback_1[lookback_1['Sentiment'] == 'Positive']['Sentiment'].count()
@@ -581,7 +594,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
 
     curr_Date = end.strftime('%Y-%m-%d')
     current_table.to_excel(f'//fileserver01/limdata/data/'
-                           f'individual staff folders/andrew li/table_{_time}_{curr_Date}.xlsx', index=False)
+                           f'individual staff folders/andrew li/csv_history/table_{_time}_{curr_Date}.xlsx', index=False)
     save_tosql(current_table, _time)
 
 def save_tosql(df, which_table):
@@ -601,23 +614,40 @@ def save_tosql(df, which_table):
 if __name__ == '__main__':
     while True:
         try:
-            if time.localtime().tm_hour == 13 and (time.localtime().tm_min == 0):
+            if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
                 update(-1, num_cores=1, num_thread=1)
                 today = dt.datetime.now()
-                prev_date = dt.datetime.now() - dt.timedelta(10)
-                target_end_date = dt.datetime(today.year, today.month, today.day, 13)
-                target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
-                create_current_summary_table(target_start_date, target_end_date, '1PM')
+                dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/csv_history')
+                dates = [dt.datetime.strptime(re.findall('table_12-30PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
+                         for date in dates if re.match('table_12-30PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
+                try:
+                    recorded_date = max(dates)
+                    date_range = pd.date_range(start=recorded_date, end=today, normalize=True)[1:]
+                except:
+                    date_range = [today]
+                for target_date in date_range:
+                    prev_date = target_date - dt.timedelta(10)
+                    target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 12, 30)
+                    target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
+                    create_current_summary_table(target_start_date, target_end_date, '12-30PM')
             elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
                 update(-1, num_cores=1, num_thread=1)  # If num_pages = -1, we will update the info page by page
                 today = dt.datetime.now()
-                prev_date = dt.datetime.now() - dt.timedelta(10)
-                target_end_date = dt.datetime(today.year, today.month, today.day, 14, 30)
-                target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
-                create_current_summary_table(target_start_date, target_end_date, '2-30PM')
+                dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/csv_history')
+                dates = [dt.datetime.strptime(re.findall('table_2-30PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
+                         for date in dates if re.match('table_2-30PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
+                try:
+                    recorded_date = max(dates)
+                    date_range = pd.date_range(start=recorded_date, end=today, normalize=True)[1:]
+                except:
+                    date_range = [today]
+                for target_date in date_range:
+                    prev_date = target_date - dt.timedelta(10)
+                    target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 14, 30)
+                    target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
+                    create_current_summary_table(target_start_date, target_end_date, '2-30PM')
             time.sleep(30)
 
         except Exception as e:
             logging.exception('message')
             print(e)
-
