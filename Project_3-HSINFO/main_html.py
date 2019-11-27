@@ -167,7 +167,7 @@ def send_email(diffs):
 
 def run_once():
     web = 'https://www.hsi.com.hk/eng/newsroom/index-other-notices'
-    with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
+    with webdriver.Chrome('C:/webdriver/chromedriver.exe', options=chrome_options) as driver:
         driver.set_page_load_timeout(120)
         driver.get(web)
         soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')

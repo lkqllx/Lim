@@ -126,7 +126,7 @@ class Stock:
     def call_webdriver(self):
         first_page = f'http://guba.eastmoney.com/list,{self._ticker}.html'  # Use selenium to get the total pages
         try:
-            with webdriver.Chrome('C:/webdriver/chromedriver', options=chrome_options) as driver:
+            with webdriver.Chrome('C:/webdriver/chromedriver.exe', options=chrome_options) as driver:
                 driver.set_page_load_timeout(15)
                 driver.get(first_page)
                 soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
