@@ -599,6 +599,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
 
 def save_tosql(df, which_table):
     from sqlalchemy import create_engine
+    import pymssql
     server = 'LIMHKDWH01S'
     user = 'andrew.li'
     password = 'an@lim355'
@@ -608,7 +609,15 @@ def save_tosql(df, which_table):
     engine = create_engine(
         f'mssql+pyodbc://{user}:{password}@' + DB['servername'] + '/' + DB['database'] + "?" + DB['driver'])
     df['Ticker'] = df['Ticker'].astype('str')
-    df.to_sql(f'table_{which_table}', engine, if_exists='append', index=False)
+
+    try:
+        conn = pymssql.connect(server="LIMHKDWH01S", user=user, password=password)
+        prev_df =  pd.read_sql(f'select * from table_{which_table}', conn)
+        df = prev_df.append(df, ignore_index=True)
+        df.reset_index(drop=True, inplace=True)
+    except:
+        pass
+    df.to_sql(f'table_{which_table}', engine, if_exists='replace', index=False)
 
 
 if __name__ == '__main__':
@@ -618,8 +627,8 @@ if __name__ == '__main__':
                 update(-1, num_cores=1, num_thread=1)
                 today = dt.datetime.now()
                 dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/csv_history')
-                dates = [dt.datetime.strptime(re.findall('table_12-30PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
-                         for date in dates if re.match('table_12-30PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
+                dates = [dt.datetime.strptime(re.findall('table_1230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
+                         for date in dates if re.match('table_1230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
                 try:
                     recorded_date = max(dates)
                     date_range = pd.date_range(start=recorded_date, end=today, normalize=True)[1:]
@@ -629,13 +638,13 @@ if __name__ == '__main__':
                     prev_date = target_date - dt.timedelta(10)
                     target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 12, 30)
                     target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
-                    create_current_summary_table(target_start_date, target_end_date, '12-30PM')
+                    create_current_summary_table(target_start_date, target_end_date, '1230PM')
             elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
                 update(-1, num_cores=1, num_thread=1)  # If num_pages = -1, we will update the info page by page
                 today = dt.datetime.now()
                 dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/csv_history')
-                dates = [dt.datetime.strptime(re.findall('table_2-30PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
-                         for date in dates if re.match('table_2-30PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
+                dates = [dt.datetime.strptime(re.findall('table_230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
+                         for date in dates if re.match('table_230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
                 try:
                     recorded_date = max(dates)
                     date_range = pd.date_range(start=recorded_date, end=today, normalize=True)[1:]
@@ -645,7 +654,7 @@ if __name__ == '__main__':
                     prev_date = target_date - dt.timedelta(10)
                     target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 14, 30)
                     target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
-                    create_current_summary_table(target_start_date, target_end_date, '2-30PM')
+                    create_current_summary_table(target_start_date, target_end_date, '230PM')
             time.sleep(30)
 
         except Exception as e:
