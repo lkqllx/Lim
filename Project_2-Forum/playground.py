@@ -60,7 +60,21 @@ import sys
 # df.to_sql('daily_table', engine, if_exists='append', index=False)
 # print()
 
-from datetime import date
-from calendra.asia import hong_kong
-cal = hong_kong.HongKong()
-print(cal.is_working_day(date(2019,11,22)))
+# from datetime import date
+# from calendra.asia import hong_kong
+# cal = hong_kong.HongKong()
+# print(cal.is_working_day(date(2019,11,22)))
+
+from sqlalchemy import create_engine
+import pymssql
+server = 'LIMHKDWH01S'
+user = 'andrew.li'
+password = 'an@lim355'
+DB = {'servername': server,
+      'database': 'FORUM_DB',
+      'driver': 'SQL Server Native Client 11.0'}
+engine = create_engine(
+    f'mssql+pyodbc://{user}:{password}@' + DB['servername'] + '/' + DB['database'] + "?" + DB['driver'])
+conn = pymssql.connect(server="LIMHKDWH01S", user=user, password=password)
+df = pd.read_sql('select * from ', conn)
+

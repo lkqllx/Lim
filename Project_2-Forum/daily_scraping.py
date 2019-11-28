@@ -23,7 +23,7 @@ from openpyxl.formatting.rule import DataBarRule
 
 logging.basicConfig(filename=f'logs/daily_routine_{dt.datetime.now().year}{dt.datetime.now().month}'
                              f'{dt.datetime.now().day}_{dt.datetime.now().hour}.log',
-                    filemode='w', format='%(name)s - %(levelname)s - %(message)s', level=logging.ERROR)
+                    filemode='w', format='\n%(message)s', level=logging.CRITICAL)
 lock = threading.RLock()
 processer_lock = mp.Lock()
 chrome_options = Options()
@@ -452,13 +452,19 @@ def run_by_historical_multiprocesses(csi300, num_pages, num_cores, num_thread):
     time_parsing = 0
     time_web = 0
     with Bar('Downloading', max=len(csi300)) as bar:
-        with mp.Pool(num_cores) as pool:
-            for output in pool.imap_unordered(run_update_historical_data, zip(csi300, [num_pages] * len(csi300),
-                                                                              [num_thread] * len(csi300))):
-                bar.next()
-                time_parsing += output[2]
-                time_web += output[3]
-                results.append(output[:2])
+        # with mp.Pool(num_cores) as pool:
+        #     for output in pool.imap_unordered(run_update_historical_data, zip(csi300, [num_pages] * len(csi300),
+        #                                                                       [num_thread] * len(csi300))):
+        #         bar.next()
+        #         time_parsing += output[2]
+        #         time_web += output[3]
+        #         results.append(output[:2])
+        for args in zip(csi300, [num_pages] * len(csi300),[num_thread] * len(csi300)):
+            output = run_update_historical_data(args)
+            bar.next()
+            time_parsing += output[2]
+            time_web += output[3]
+            results.append(output[:2])
     return results, time_web, time_parsing
 
 
@@ -526,8 +532,13 @@ def update(num_pages, num_cores=4, num_thread=5):
         except:
             count -= 1
 
+    if count == -1:
+        make_log('\n'.join(['*' * 50, f'Failed to update the ticker ', ', '.join(not_succesful_list), '*' * 50]), 'info')
+
 
 def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: str):
+    curr_date = end.strftime('%Y-%m-%d')
+
     files = os.listdir('//fileserver01/limdata/data/individual staff folders/andrew li/daily')
     tickers = [file for file in files if re.match('[\d]+', file)]
     info_list = []
@@ -592,12 +603,9 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
     current_table['Rank_neg_8'] = np.ceil(current_table['Num_neg_8'].rank(axis=0, pct=True).mul(10)).astype(int)
     current_table['Rank_all_10'] = np.ceil(current_table['Num_all_10'].rank(axis=0,pct=True).mul(10)).astype(int)
 
-    curr_Date = end.strftime('%Y-%m-%d')
-    current_table.to_excel(f'//fileserver01/limdata/data/'
-                           f'individual staff folders/andrew li/csv_history/table_{_time}_{curr_Date}.xlsx', index=False)
-    save_tosql(current_table, _time)
+    save_tosql(current_table, _time, curr_date)
 
-def save_tosql(df, which_table):
+def save_tosql(current_table, which_table, curr_date):
     from sqlalchemy import create_engine
     import pymssql
     server = 'LIMHKDWH01S'
@@ -608,6 +616,7 @@ def save_tosql(df, which_table):
           'driver': 'driver=SQL Server Native Client 11.0'}
     engine = create_engine(
         f'mssql+pyodbc://{user}:{password}@' + DB['servername'] + '/' + DB['database'] + "?" + DB['driver'])
+    df = current_table.copy(deep=True)
     df['Ticker'] = df['Ticker'].astype('str')
 
     try:
@@ -618,14 +627,36 @@ def save_tosql(df, which_table):
     except:
         pass
     df.to_sql(f'table_{which_table}', engine, if_exists='replace', index=False)
+    current_table.to_excel(f'//fileserver01/limdata/data/'
+                           f'individual staff folders/andrew li/csv_history/'
+                           f'table_{which_table}_{curr_date}.xlsx', index=False)
+
+
+def make_log(msg, level):
+    if level == 'info':
+        logging.critical(msg)
+    else:
+        logging.error((msg))
 
 
 if __name__ == '__main__':
     while True:
         try:
+            if time.localtime().tm_hour == 0 and (time.localtime().tm_min == 0):
+                curr = dt.datetime.now()
+                curr_str = curr.strftime('%Y-%m-%d')
+                make_log(msg='\n'.join(['-' * 50, ' ' * 20 + curr_str, '-' * 50]), level='info')
+
+
             if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
-                update(-1, num_cores=1, num_thread=1)
+                _doing = '1230PM'
                 today = dt.datetime.now()
+                today_str = today.strftime('%Y-%m-%d')
+                make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 1230PM']),
+                         level='info')
+                update(-1, num_cores=1, num_thread=1)
+                make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 1230PM']),
+                         level='info')
                 dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/csv_history')
                 dates = [dt.datetime.strptime(re.findall('table_1230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
                          for date in dates if re.match('table_1230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
@@ -638,10 +669,23 @@ if __name__ == '__main__':
                     prev_date = target_date - dt.timedelta(10)
                     target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 12, 30)
                     target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
+
+                    curr_date = target_date.strftime('%Y-%m-%d')
+                    make_log(msg='\n'.join(['*' * 50, f'Creating summary table of {curr_date} - 1230PM']),
+                             level='info')
                     create_current_summary_table(target_start_date, target_end_date, '1230PM')
+                    make_log('\n'.join([f'Successfully updated the database of {curr_date} - 1230PM', '*' * 50]),
+                             level='info')
+
             elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
-                update(-1, num_cores=1, num_thread=1)  # If num_pages = -1, we will update the info page by page
+                _doing = '230PM'
                 today = dt.datetime.now()
+                today_str = today.strftime('%Y-%m-%d')
+                make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 230PM']),
+                         level='info')
+                update(-1, num_cores=1, num_thread=1)
+                make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 230PM']),
+                         level='info')
                 dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/csv_history')
                 dates = [dt.datetime.strptime(re.findall('table_230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
                          for date in dates if re.match('table_230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
@@ -654,9 +698,17 @@ if __name__ == '__main__':
                     prev_date = target_date - dt.timedelta(10)
                     target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 14, 30)
                     target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
+                    curr_date = target_date.strftime('%Y-%m-%d')
+                    make_log(msg='\n'.join(['*' * 50, f'Creating summary table of {curr_date} - 230PM']),
+                             level='info')
                     create_current_summary_table(target_start_date, target_end_date, '230PM')
+                    make_log('\n'.join([f'Successfully updated the database of {curr_date} - 230PM', '*' * 50]),
+                             level='info')
             time.sleep(30)
 
         except Exception as e:
             logging.exception('message')
+            make_log('\n'.join(['*' * 50, f'Unexpected error detected while doing {today_str} - {_doing}'.upper(),
+                                'Due to following error - ']), level='info')
+            make_log(e, level='info')
             print(e)
