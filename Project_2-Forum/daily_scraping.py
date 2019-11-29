@@ -626,6 +626,10 @@ def save_tosql(current_table, which_table, curr_date):
         df.reset_index(drop=True, inplace=True)
     except:
         pass
+
+    """Here we cannot use the 'append' method to insert SQL since
+    there are some unexpected exceptions captured which will disorder the sequence
+    of the database. Thus we have to retrieve the data first and replace the previous one"""
     df.to_sql(f'table_{which_table}', engine, if_exists='replace', index=False)
     current_table.to_excel(f'//fileserver01/limdata/data/'
                            f'individual staff folders/andrew li/csv_history/'
@@ -642,10 +646,11 @@ def make_log(msg, level):
 if __name__ == '__main__':
     while True:
         try:
-            if time.localtime().tm_hour == 0 and (time.localtime().tm_min == 0):
+            if time.localtime().tm_hour == 9 and (time.localtime().tm_min == 0):
                 curr = dt.datetime.now()
                 curr_str = curr.strftime('%Y-%m-%d')
                 make_log(msg='\n'.join(['-' * 50, ' ' * 20 + curr_str, '-' * 50]), level='info')
+                time.sleep(61)
 
 
             if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
