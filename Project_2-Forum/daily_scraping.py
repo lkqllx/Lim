@@ -517,6 +517,7 @@ def update(num_pages, num_cores=4, num_thread=5):
     not_succesful_list = [ticker for ticker, download_flag in curr_list if download_flag == False]
     count = 5
     while (not all_succesful) and count >= 0:
+        time.sleep(60)
         try:
             print('Failed Ticker', f'\n, '.join(not_succesful_list))
             (new_curr_list, time_web, time_parsing), time_used = run_by_historical_multiprocesses(not_succesful_list,
@@ -533,7 +534,9 @@ def update(num_pages, num_cores=4, num_thread=5):
             count -= 1
 
     if count == -1:
-        make_log('\n'.join(['*' * 50, f'Failed to update the ticker ', ', '.join(not_succesful_list), '*' * 50]), 'info')
+        not_succesful_list = ['\n' + ' ' * 20 + curr_str for curr_str in not_succesful_list]
+        make_log('\n'.join(['@' * 50, ' ' * 10 + f'Failed to update the tickers '.upper(),
+                            ''.join(not_succesful_list), '@' * 50]), 'info')
 
 
 def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: str):
