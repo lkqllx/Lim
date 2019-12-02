@@ -1,0 +1,4834 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>SHARPE_HEATMAPS_RANK_SHORT__POSITIVE</title>
+            <script type="text/javascript" src="https://assets.pyecharts.org/assets/echarts.min.js"></script>
+
+    
+</head>
+<body>
+        <style>
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+        }
+
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 12px 16px;
+            transition: 0.3s;
+        }
+
+        .tab button:hover {
+            background-color: #ddd;
+        }
+
+        .tab button.active {
+            background-color: #ccc;
+        }
+
+        .chart-container {
+            display: none;
+            padding: 6px 12px;
+            border-top: none;
+        }
+    </style>
+    <div class="tab">
+            <button class="tablinks" onclick="showChart(event, 'd09029035b7446b49978e53179ce68b0')">cmc1</button>
+            <button class="tablinks" onclick="showChart(event, 'b31e510e9c384452a27a9bea871356c1')">cmc3</button>
+            <button class="tablinks" onclick="showChart(event, '7d6beb7622c542469f5484516ec2b51f')">cmc5</button>
+            <button class="tablinks" onclick="showChart(event, '49158e3e8647411380766a6243e305a6')">cmc10</button>
+            <button class="tablinks" onclick="showChart(event, '583959360ed34dc6a939c0b0cd904cb8')">cmc15</button>
+            <button class="tablinks" onclick="showChart(event, 'c94f6b78fa1c4646ac766a5aaadba889')">cmc20</button>
+            <button class="tablinks" onclick="showChart(event, 'fd46daf3dce8422ebb6467841a2c9e8f')">cmc30</button>
+    </div>
+
+    <div class="box">
+                <div id="d09029035b7446b49978e53179ce68b0" class="chart-container" style="width:1200px; height:800px;"></div>
+    <script>
+        var chart_d09029035b7446b49978e53179ce68b0 = echarts.init(
+            document.getElementById('d09029035b7446b49978e53179ce68b0'), 'white', {renderer: 'canvas'});
+        var option_d09029035b7446b49978e53179ce68b0 = {
+    "animation": true,
+    "animationThreshold": 2000,
+    "animationDuration": 1000,
+    "animationEasing": "cubicOut",
+    "animationDelay": 0,
+    "animationDurationUpdate": 300,
+    "animationEasingUpdate": "cubicOut",
+    "animationDelayUpdate": 0,
+    "color": [
+        "#c23531",
+        "#2f4554",
+        "#61a0a8",
+        "#d48265",
+        "#749f83",
+        "#ca8622",
+        "#bda29a",
+        "#6e7074",
+        "#546570",
+        "#c4ccd3",
+        "#f05b72",
+        "#ef5b9c",
+        "#f47920",
+        "#905a3d",
+        "#fab27b",
+        "#2a5caa",
+        "#444693",
+        "#726930",
+        "#b2d235",
+        "#6d8346",
+        "#ac6767",
+        "#1d953f",
+        "#6950a1",
+        "#918597"
+    ],
+    "series": [
+        {
+            "type": "heatmap",
+            "name": "CMC1",
+            "data": [
+                [
+                    0,
+                    0,
+                    -1.216
+                ],
+                [
+                    0,
+                    9,
+                    -0.689
+                ],
+                [
+                    0,
+                    1,
+                    -1.085
+                ],
+                [
+                    0,
+                    2,
+                    -1.01
+                ],
+                [
+                    0,
+                    3,
+                    -0.958
+                ],
+                [
+                    0,
+                    4,
+                    -0.877
+                ],
+                [
+                    0,
+                    5,
+                    -0.804
+                ],
+                [
+                    0,
+                    6,
+                    -0.765
+                ],
+                [
+                    0,
+                    7,
+                    -0.696
+                ],
+                [
+                    0,
+                    8,
+                    -0.684
+                ],
+                [
+                    9,
+                    0,
+                    -0.456
+                ],
+                [
+                    9,
+                    9,
+                    0.132
+                ],
+                [
+                    9,
+                    1,
+                    -0.197
+                ],
+                [
+                    9,
+                    2,
+                    -0.093
+                ],
+                [
+                    9,
+                    3,
+                    0.017
+                ],
+                [
+                    9,
+                    4,
+                    0.124
+                ],
+                [
+                    9,
+                    5,
+                    0.161
+                ],
+                [
+                    9,
+                    6,
+                    0.177
+                ],
+                [
+                    9,
+                    7,
+                    0.158
+                ],
+                [
+                    9,
+                    8,
+                    0.136
+                ],
+                [
+                    1,
+                    0,
+                    -1.247
+                ],
+                [
+                    1,
+                    9,
+                    -0.889
+                ],
+                [
+                    1,
+                    1,
+                    -1.121
+                ],
+                [
+                    1,
+                    2,
+                    -1.01
+                ],
+                [
+                    1,
+                    3,
+                    -0.945
+                ],
+                [
+                    1,
+                    4,
+                    -1.011
+                ],
+                [
+                    1,
+                    5,
+                    -1.044
+                ],
+                [
+                    1,
+                    6,
+                    -0.991
+                ],
+                [
+                    1,
+                    7,
+                    -0.981
+                ],
+                [
+                    1,
+                    8,
+                    -0.917
+                ],
+                [
+                    2,
+                    0,
+                    -1.311
+                ],
+                [
+                    2,
+                    9,
+                    -0.687
+                ],
+                [
+                    2,
+                    1,
+                    -1.201
+                ],
+                [
+                    2,
+                    2,
+                    -1.113
+                ],
+                [
+                    2,
+                    3,
+                    -1.061
+                ],
+                [
+                    2,
+                    4,
+                    -0.933
+                ],
+                [
+                    2,
+                    5,
+                    -0.908
+                ],
+                [
+                    2,
+                    6,
+                    -0.901
+                ],
+                [
+                    2,
+                    7,
+                    -0.819
+                ],
+                [
+                    2,
+                    8,
+                    -0.753
+                ],
+                [
+                    3,
+                    0,
+                    -1.327
+                ],
+                [
+                    3,
+                    9,
+                    -0.957
+                ],
+                [
+                    3,
+                    1,
+                    -1.236
+                ],
+                [
+                    3,
+                    2,
+                    -1.12
+                ],
+                [
+                    3,
+                    3,
+                    -1.078
+                ],
+                [
+                    3,
+                    4,
+                    -1.088
+                ],
+                [
+                    3,
+                    5,
+                    -1.106
+                ],
+                [
+                    3,
+                    6,
+                    -1.083
+                ],
+                [
+                    3,
+                    7,
+                    -0.991
+                ],
+                [
+                    3,
+                    8,
+                    -0.989
+                ],
+                [
+                    4,
+                    0,
+                    -1.417
+                ],
+                [
+                    4,
+                    9,
+                    -0.935
+                ],
+                [
+                    4,
+                    1,
+                    -1.12
+                ],
+                [
+                    4,
+                    2,
+                    -1.129
+                ],
+                [
+                    4,
+                    3,
+                    -1.037
+                ],
+                [
+                    4,
+                    4,
+                    -0.985
+                ],
+                [
+                    4,
+                    5,
+                    -0.923
+                ],
+                [
+                    4,
+                    6,
+                    -0.882
+                ],
+                [
+                    4,
+                    7,
+                    -0.966
+                ],
+                [
+                    4,
+                    8,
+                    -0.961
+                ],
+                [
+                    5,
+                    0,
+                    -1.254
+                ],
+                [
+                    5,
+                    9,
+                    -0.791
+                ],
+                [
+                    5,
+                    1,
+                    -1.303
+                ],
+                [
+                    5,
+                    2,
+                    -1.213
+                ],
+                [
+                    5,
+                    3,
+                    -1.176
+                ],
+                [
+                    5,
+                    4,
+                    -1.08
+                ],
+                [
+                    5,
+                    5,
+                    -1.048
+                ],
+                [
+                    5,
+                    6,
+                    -1.03
+                ],
+                [
+                    5,
+                    7,
+                    -0.945
+                ],
+                [
+                    5,
+                    8,
+                    -0.822
+                ],
+                [
+                    6,
+                    0,
+                    -1.215
+                ],
+                [
+                    6,
+                    9,
+                    -0.651
+                ],
+                [
+                    6,
+                    1,
+                    -1.067
+                ],
+                [
+                    6,
+                    2,
+                    -1.016
+                ],
+                [
+                    6,
+                    3,
+                    -0.938
+                ],
+                [
+                    6,
+                    4,
+                    -0.847
+                ],
+                [
+                    6,
+                    5,
+                    -0.856
+                ],
+                [
+                    6,
+                    6,
+                    -0.725
+                ],
+                [
+                    6,
+                    7,
+                    -0.762
+                ],
+                [
+                    6,
+                    8,
+                    -0.714
+                ],
+                [
+                    7,
+                    0,
+                    -1.17
+                ],
+                [
+                    7,
+                    9,
+                    -0.647
+                ],
+                [
+                    7,
+                    1,
+                    -0.975
+                ],
+                [
+                    7,
+                    2,
+                    -0.87
+                ],
+                [
+                    7,
+                    3,
+                    -0.821
+                ],
+                [
+                    7,
+                    4,
+                    -0.795
+                ],
+                [
+                    7,
+                    5,
+                    -0.747
+                ],
+                [
+                    7,
+                    6,
+                    -0.784
+                ],
+                [
+                    7,
+                    7,
+                    -0.67
+                ],
+                [
+                    7,
+                    8,
+                    -0.61
+                ],
+                [
+                    8,
+                    0,
+                    -0.928
+                ],
+                [
+                    8,
+                    9,
+                    -0.392
+                ],
+                [
+                    8,
+                    1,
+                    -0.831
+                ],
+                [
+                    8,
+                    2,
+                    -0.726
+                ],
+                [
+                    8,
+                    3,
+                    -0.692
+                ],
+                [
+                    8,
+                    4,
+                    -0.634
+                ],
+                [
+                    8,
+                    5,
+                    -0.585
+                ],
+                [
+                    8,
+                    6,
+                    -0.584
+                ],
+                [
+                    8,
+                    7,
+                    -0.49
+                ],
+                [
+                    8,
+                    8,
+                    -0.445
+                ]
+            ],
+            "label": {
+                "show": true,
+                "position": "inside",
+                "color": "#000",
+                "margin": 8
+            },
+            "rippleEffect": {
+                "show": true,
+                "brushType": "stroke",
+                "scale": 2.5,
+                "period": 4
+            }
+        }
+    ],
+    "legend": [
+        {
+            "data": [
+                "CMC1"
+            ],
+            "selected": {
+                "CMC1": true
+            },
+            "show": true
+        }
+    ],
+    "tooltip": {
+        "show": true,
+        "trigger": "item",
+        "triggerOn": "mousemove|click",
+        "axisPointer": {
+            "type": "line"
+        },
+        "textStyle": {
+            "fontSize": 14
+        },
+        "borderWidth": 0
+    },
+    "xAxis": [
+        {
+            "name": "Decile of Signals",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "yAxis": [
+        {
+            "name": "Look Back Period",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "title": [
+        {}
+    ],
+    "visualMap": {
+        "show": true,
+        "type": "continuous",
+        "min": -1,
+        "max": 2,
+        "textStyle": {
+            "color": "#000",
+            "fontSize": 14
+        },
+        "inRange": {
+            "color": [
+                "#50a3ba",
+                "#eac763",
+                "#d94e5d"
+            ]
+        },
+        "calculable": true,
+        "splitNumber": 5,
+        "orient": "horizontal",
+        "showLabel": true
+    }
+};
+        chart_d09029035b7446b49978e53179ce68b0.setOption(option_d09029035b7446b49978e53179ce68b0);
+    </script>
+                <div id="b31e510e9c384452a27a9bea871356c1" class="chart-container" style="width:1200px; height:800px;"></div>
+    <script>
+        var chart_b31e510e9c384452a27a9bea871356c1 = echarts.init(
+            document.getElementById('b31e510e9c384452a27a9bea871356c1'), 'white', {renderer: 'canvas'});
+        var option_b31e510e9c384452a27a9bea871356c1 = {
+    "animation": true,
+    "animationThreshold": 2000,
+    "animationDuration": 1000,
+    "animationEasing": "cubicOut",
+    "animationDelay": 0,
+    "animationDurationUpdate": 300,
+    "animationEasingUpdate": "cubicOut",
+    "animationDelayUpdate": 0,
+    "color": [
+        "#c23531",
+        "#2f4554",
+        "#61a0a8",
+        "#d48265",
+        "#749f83",
+        "#ca8622",
+        "#bda29a",
+        "#6e7074",
+        "#546570",
+        "#c4ccd3",
+        "#f05b72",
+        "#ef5b9c",
+        "#f47920",
+        "#905a3d",
+        "#fab27b",
+        "#2a5caa",
+        "#444693",
+        "#726930",
+        "#b2d235",
+        "#6d8346",
+        "#ac6767",
+        "#1d953f",
+        "#6950a1",
+        "#918597"
+    ],
+    "series": [
+        {
+            "type": "heatmap",
+            "name": "CMC3",
+            "data": [
+                [
+                    0,
+                    0,
+                    -0.795
+                ],
+                [
+                    0,
+                    9,
+                    -0.578
+                ],
+                [
+                    0,
+                    1,
+                    -0.799
+                ],
+                [
+                    0,
+                    2,
+                    -0.792
+                ],
+                [
+                    0,
+                    3,
+                    -0.785
+                ],
+                [
+                    0,
+                    4,
+                    -0.748
+                ],
+                [
+                    0,
+                    5,
+                    -0.735
+                ],
+                [
+                    0,
+                    6,
+                    -0.692
+                ],
+                [
+                    0,
+                    7,
+                    -0.654
+                ],
+                [
+                    0,
+                    8,
+                    -0.599
+                ],
+                [
+                    9,
+                    0,
+                    -0.17
+                ],
+                [
+                    9,
+                    9,
+                    0.036
+                ],
+                [
+                    9,
+                    1,
+                    -0.121
+                ],
+                [
+                    9,
+                    2,
+                    -0.058
+                ],
+                [
+                    9,
+                    3,
+                    -0.019
+                ],
+                [
+                    9,
+                    4,
+                    0.052
+                ],
+                [
+                    9,
+                    5,
+                    0.058
+                ],
+                [
+                    9,
+                    6,
+                    0.067
+                ],
+                [
+                    9,
+                    7,
+                    0.061
+                ],
+                [
+                    9,
+                    8,
+                    0.034
+                ],
+                [
+                    1,
+                    0,
+                    -0.709
+                ],
+                [
+                    1,
+                    9,
+                    -0.69
+                ],
+                [
+                    1,
+                    1,
+                    -0.768
+                ],
+                [
+                    1,
+                    2,
+                    -0.655
+                ],
+                [
+                    1,
+                    3,
+                    -0.666
+                ],
+                [
+                    1,
+                    4,
+                    -0.746
+                ],
+                [
+                    1,
+                    5,
+                    -0.67
+                ],
+                [
+                    1,
+                    6,
+                    -0.732
+                ],
+                [
+                    1,
+                    7,
+                    -0.718
+                ],
+                [
+                    1,
+                    8,
+                    -0.73
+                ],
+                [
+                    2,
+                    0,
+                    -0.719
+                ],
+                [
+                    2,
+                    9,
+                    -0.473
+                ],
+                [
+                    2,
+                    1,
+                    -0.518
+                ],
+                [
+                    2,
+                    2,
+                    -0.661
+                ],
+                [
+                    2,
+                    3,
+                    -0.588
+                ],
+                [
+                    2,
+                    4,
+                    -0.505
+                ],
+                [
+                    2,
+                    5,
+                    -0.554
+                ],
+                [
+                    2,
+                    6,
+                    -0.494
+                ],
+                [
+                    2,
+                    7,
+                    -0.483
+                ],
+                [
+                    2,
+                    8,
+                    -0.485
+                ],
+                [
+                    3,
+                    0,
+                    -0.614
+                ],
+                [
+                    3,
+                    9,
+                    -0.675
+                ],
+                [
+                    3,
+                    1,
+                    -0.729
+                ],
+                [
+                    3,
+                    2,
+                    -0.665
+                ],
+                [
+                    3,
+                    3,
+                    -0.629
+                ],
+                [
+                    3,
+                    4,
+                    -0.735
+                ],
+                [
+                    3,
+                    5,
+                    -0.709
+                ],
+                [
+                    3,
+                    6,
+                    -0.677
+                ],
+                [
+                    3,
+                    7,
+                    -0.593
+                ],
+                [
+                    3,
+                    8,
+                    -0.642
+                ],
+                [
+                    4,
+                    0,
+                    -0.715
+                ],
+                [
+                    4,
+                    9,
+                    -0.745
+                ],
+                [
+                    4,
+                    1,
+                    -0.605
+                ],
+                [
+                    4,
+                    2,
+                    -0.634
+                ],
+                [
+                    4,
+                    3,
+                    -0.642
+                ],
+                [
+                    4,
+                    4,
+                    -0.588
+                ],
+                [
+                    4,
+                    5,
+                    -0.701
+                ],
+                [
+                    4,
+                    6,
+                    -0.71
+                ],
+                [
+                    4,
+                    7,
+                    -0.829
+                ],
+                [
+                    4,
+                    8,
+                    -0.788
+                ],
+                [
+                    5,
+                    0,
+                    -0.665
+                ],
+                [
+                    5,
+                    9,
+                    -0.552
+                ],
+                [
+                    5,
+                    1,
+                    -0.749
+                ],
+                [
+                    5,
+                    2,
+                    -0.707
+                ],
+                [
+                    5,
+                    3,
+                    -0.757
+                ],
+                [
+                    5,
+                    4,
+                    -0.699
+                ],
+                [
+                    5,
+                    5,
+                    -0.588
+                ],
+                [
+                    5,
+                    6,
+                    -0.667
+                ],
+                [
+                    5,
+                    7,
+                    -0.581
+                ],
+                [
+                    5,
+                    8,
+                    -0.48
+                ],
+                [
+                    6,
+                    0,
+                    -0.717
+                ],
+                [
+                    6,
+                    9,
+                    -0.416
+                ],
+                [
+                    6,
+                    1,
+                    -0.625
+                ],
+                [
+                    6,
+                    2,
+                    -0.62
+                ],
+                [
+                    6,
+                    3,
+                    -0.619
+                ],
+                [
+                    6,
+                    4,
+                    -0.477
+                ],
+                [
+                    6,
+                    5,
+                    -0.518
+                ],
+                [
+                    6,
+                    6,
+                    -0.42
+                ],
+                [
+                    6,
+                    7,
+                    -0.426
+                ],
+                [
+                    6,
+                    8,
+                    -0.513
+                ],
+                [
+                    7,
+                    0,
+                    -0.534
+                ],
+                [
+                    7,
+                    9,
+                    -0.486
+                ],
+                [
+                    7,
+                    1,
+                    -0.453
+                ],
+                [
+                    7,
+                    2,
+                    -0.478
+                ],
+                [
+                    7,
+                    3,
+                    -0.437
+                ],
+                [
+                    7,
+                    4,
+                    -0.509
+                ],
+                [
+                    7,
+                    5,
+                    -0.497
+                ],
+                [
+                    7,
+                    6,
+                    -0.509
+                ],
+                [
+                    7,
+                    7,
+                    -0.5
+                ],
+                [
+                    7,
+                    8,
+                    -0.431
+                ],
+                [
+                    8,
+                    0,
+                    -0.282
+                ],
+                [
+                    8,
+                    9,
+                    -0.253
+                ],
+                [
+                    8,
+                    1,
+                    -0.431
+                ],
+                [
+                    8,
+                    2,
+                    -0.47
+                ],
+                [
+                    8,
+                    3,
+                    -0.402
+                ],
+                [
+                    8,
+                    4,
+                    -0.461
+                ],
+                [
+                    8,
+                    5,
+                    -0.439
+                ],
+                [
+                    8,
+                    6,
+                    -0.395
+                ],
+                [
+                    8,
+                    7,
+                    -0.351
+                ],
+                [
+                    8,
+                    8,
+                    -0.292
+                ]
+            ],
+            "label": {
+                "show": true,
+                "position": "inside",
+                "color": "#000",
+                "margin": 8
+            },
+            "rippleEffect": {
+                "show": true,
+                "brushType": "stroke",
+                "scale": 2.5,
+                "period": 4
+            }
+        }
+    ],
+    "legend": [
+        {
+            "data": [
+                "CMC3"
+            ],
+            "selected": {
+                "CMC3": true
+            },
+            "show": true
+        }
+    ],
+    "tooltip": {
+        "show": true,
+        "trigger": "item",
+        "triggerOn": "mousemove|click",
+        "axisPointer": {
+            "type": "line"
+        },
+        "textStyle": {
+            "fontSize": 14
+        },
+        "borderWidth": 0
+    },
+    "xAxis": [
+        {
+            "name": "Decile of Signals",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "yAxis": [
+        {
+            "name": "Look Back Period",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "title": [
+        {}
+    ],
+    "visualMap": {
+        "show": true,
+        "type": "continuous",
+        "min": -1,
+        "max": 2,
+        "textStyle": {
+            "color": "#000",
+            "fontSize": 14
+        },
+        "inRange": {
+            "color": [
+                "#50a3ba",
+                "#eac763",
+                "#d94e5d"
+            ]
+        },
+        "calculable": true,
+        "splitNumber": 5,
+        "orient": "horizontal",
+        "showLabel": true
+    }
+};
+        chart_b31e510e9c384452a27a9bea871356c1.setOption(option_b31e510e9c384452a27a9bea871356c1);
+    </script>
+                <div id="7d6beb7622c542469f5484516ec2b51f" class="chart-container" style="width:1200px; height:800px;"></div>
+    <script>
+        var chart_7d6beb7622c542469f5484516ec2b51f = echarts.init(
+            document.getElementById('7d6beb7622c542469f5484516ec2b51f'), 'white', {renderer: 'canvas'});
+        var option_7d6beb7622c542469f5484516ec2b51f = {
+    "animation": true,
+    "animationThreshold": 2000,
+    "animationDuration": 1000,
+    "animationEasing": "cubicOut",
+    "animationDelay": 0,
+    "animationDurationUpdate": 300,
+    "animationEasingUpdate": "cubicOut",
+    "animationDelayUpdate": 0,
+    "color": [
+        "#c23531",
+        "#2f4554",
+        "#61a0a8",
+        "#d48265",
+        "#749f83",
+        "#ca8622",
+        "#bda29a",
+        "#6e7074",
+        "#546570",
+        "#c4ccd3",
+        "#f05b72",
+        "#ef5b9c",
+        "#f47920",
+        "#905a3d",
+        "#fab27b",
+        "#2a5caa",
+        "#444693",
+        "#726930",
+        "#b2d235",
+        "#6d8346",
+        "#ac6767",
+        "#1d953f",
+        "#6950a1",
+        "#918597"
+    ],
+    "series": [
+        {
+            "type": "heatmap",
+            "name": "CMC5",
+            "data": [
+                [
+                    0,
+                    0,
+                    -0.792
+                ],
+                [
+                    0,
+                    9,
+                    -0.582
+                ],
+                [
+                    0,
+                    1,
+                    -0.692
+                ],
+                [
+                    0,
+                    2,
+                    -0.704
+                ],
+                [
+                    0,
+                    3,
+                    -0.712
+                ],
+                [
+                    0,
+                    4,
+                    -0.677
+                ],
+                [
+                    0,
+                    5,
+                    -0.655
+                ],
+                [
+                    0,
+                    6,
+                    -0.609
+                ],
+                [
+                    0,
+                    7,
+                    -0.56
+                ],
+                [
+                    0,
+                    8,
+                    -0.571
+                ],
+                [
+                    9,
+                    0,
+                    0.02
+                ],
+                [
+                    9,
+                    9,
+                    0.138
+                ],
+                [
+                    9,
+                    1,
+                    0.032
+                ],
+                [
+                    9,
+                    2,
+                    0.103
+                ],
+                [
+                    9,
+                    3,
+                    0.072
+                ],
+                [
+                    9,
+                    4,
+                    0.107
+                ],
+                [
+                    9,
+                    5,
+                    0.117
+                ],
+                [
+                    9,
+                    6,
+                    0.13
+                ],
+                [
+                    9,
+                    7,
+                    0.137
+                ],
+                [
+                    9,
+                    8,
+                    0.136
+                ],
+                [
+                    1,
+                    0,
+                    -0.612
+                ],
+                [
+                    1,
+                    9,
+                    -0.635
+                ],
+                [
+                    1,
+                    1,
+                    -0.727
+                ],
+                [
+                    1,
+                    2,
+                    -0.525
+                ],
+                [
+                    1,
+                    3,
+                    -0.514
+                ],
+                [
+                    1,
+                    4,
+                    -0.57
+                ],
+                [
+                    1,
+                    5,
+                    -0.599
+                ],
+                [
+                    1,
+                    6,
+                    -0.662
+                ],
+                [
+                    1,
+                    7,
+                    -0.715
+                ],
+                [
+                    1,
+                    8,
+                    -0.658
+                ],
+                [
+                    2,
+                    0,
+                    -0.679
+                ],
+                [
+                    2,
+                    9,
+                    -0.419
+                ],
+                [
+                    2,
+                    1,
+                    -0.515
+                ],
+                [
+                    2,
+                    2,
+                    -0.644
+                ],
+                [
+                    2,
+                    3,
+                    -0.555
+                ],
+                [
+                    2,
+                    4,
+                    -0.469
+                ],
+                [
+                    2,
+                    5,
+                    -0.481
+                ],
+                [
+                    2,
+                    6,
+                    -0.411
+                ],
+                [
+                    2,
+                    7,
+                    -0.396
+                ],
+                [
+                    2,
+                    8,
+                    -0.397
+                ],
+                [
+                    3,
+                    0,
+                    -0.535
+                ],
+                [
+                    3,
+                    9,
+                    -0.552
+                ],
+                [
+                    3,
+                    1,
+                    -0.449
+                ],
+                [
+                    3,
+                    2,
+                    -0.486
+                ],
+                [
+                    3,
+                    3,
+                    -0.612
+                ],
+                [
+                    3,
+                    4,
+                    -0.621
+                ],
+                [
+                    3,
+                    5,
+                    -0.551
+                ],
+                [
+                    3,
+                    6,
+                    -0.574
+                ],
+                [
+                    3,
+                    7,
+                    -0.497
+                ],
+                [
+                    3,
+                    8,
+                    -0.584
+                ],
+                [
+                    4,
+                    0,
+                    -0.533
+                ],
+                [
+                    4,
+                    9,
+                    -0.62
+                ],
+                [
+                    4,
+                    1,
+                    -0.606
+                ],
+                [
+                    4,
+                    2,
+                    -0.499
+                ],
+                [
+                    4,
+                    3,
+                    -0.492
+                ],
+                [
+                    4,
+                    4,
+                    -0.495
+                ],
+                [
+                    4,
+                    5,
+                    -0.56
+                ],
+                [
+                    4,
+                    6,
+                    -0.635
+                ],
+                [
+                    4,
+                    7,
+                    -0.638
+                ],
+                [
+                    4,
+                    8,
+                    -0.661
+                ],
+                [
+                    5,
+                    0,
+                    -0.411
+                ],
+                [
+                    5,
+                    9,
+                    -0.472
+                ],
+                [
+                    5,
+                    1,
+                    -0.5
+                ],
+                [
+                    5,
+                    2,
+                    -0.466
+                ],
+                [
+                    5,
+                    3,
+                    -0.449
+                ],
+                [
+                    5,
+                    4,
+                    -0.471
+                ],
+                [
+                    5,
+                    5,
+                    -0.534
+                ],
+                [
+                    5,
+                    6,
+                    -0.45
+                ],
+                [
+                    5,
+                    7,
+                    -0.529
+                ],
+                [
+                    5,
+                    8,
+                    -0.439
+                ],
+                [
+                    6,
+                    0,
+                    -0.439
+                ],
+                [
+                    6,
+                    9,
+                    -0.356
+                ],
+                [
+                    6,
+                    1,
+                    -0.477
+                ],
+                [
+                    6,
+                    2,
+                    -0.572
+                ],
+                [
+                    6,
+                    3,
+                    -0.452
+                ],
+                [
+                    6,
+                    4,
+                    -0.456
+                ],
+                [
+                    6,
+                    5,
+                    -0.443
+                ],
+                [
+                    6,
+                    6,
+                    -0.334
+                ],
+                [
+                    6,
+                    7,
+                    -0.35
+                ],
+                [
+                    6,
+                    8,
+                    -0.351
+                ],
+                [
+                    7,
+                    0,
+                    -0.502
+                ],
+                [
+                    7,
+                    9,
+                    -0.369
+                ],
+                [
+                    7,
+                    1,
+                    -0.388
+                ],
+                [
+                    7,
+                    2,
+                    -0.34
+                ],
+                [
+                    7,
+                    3,
+                    -0.36
+                ],
+                [
+                    7,
+                    4,
+                    -0.422
+                ],
+                [
+                    7,
+                    5,
+                    -0.385
+                ],
+                [
+                    7,
+                    6,
+                    -0.497
+                ],
+                [
+                    7,
+                    7,
+                    -0.402
+                ],
+                [
+                    7,
+                    8,
+                    -0.347
+                ],
+                [
+                    8,
+                    0,
+                    -0.212
+                ],
+                [
+                    8,
+                    9,
+                    -0.332
+                ],
+                [
+                    8,
+                    1,
+                    -0.283
+                ],
+                [
+                    8,
+                    2,
+                    -0.389
+                ],
+                [
+                    8,
+                    3,
+                    -0.392
+                ],
+                [
+                    8,
+                    4,
+                    -0.372
+                ],
+                [
+                    8,
+                    5,
+                    -0.347
+                ],
+                [
+                    8,
+                    6,
+                    -0.348
+                ],
+                [
+                    8,
+                    7,
+                    -0.344
+                ],
+                [
+                    8,
+                    8,
+                    -0.353
+                ]
+            ],
+            "label": {
+                "show": true,
+                "position": "inside",
+                "color": "#000",
+                "margin": 8
+            },
+            "rippleEffect": {
+                "show": true,
+                "brushType": "stroke",
+                "scale": 2.5,
+                "period": 4
+            }
+        }
+    ],
+    "legend": [
+        {
+            "data": [
+                "CMC5"
+            ],
+            "selected": {
+                "CMC5": true
+            },
+            "show": true
+        }
+    ],
+    "tooltip": {
+        "show": true,
+        "trigger": "item",
+        "triggerOn": "mousemove|click",
+        "axisPointer": {
+            "type": "line"
+        },
+        "textStyle": {
+            "fontSize": 14
+        },
+        "borderWidth": 0
+    },
+    "xAxis": [
+        {
+            "name": "Decile of Signals",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "yAxis": [
+        {
+            "name": "Look Back Period",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "title": [
+        {}
+    ],
+    "visualMap": {
+        "show": true,
+        "type": "continuous",
+        "min": -1,
+        "max": 2,
+        "textStyle": {
+            "color": "#000",
+            "fontSize": 14
+        },
+        "inRange": {
+            "color": [
+                "#50a3ba",
+                "#eac763",
+                "#d94e5d"
+            ]
+        },
+        "calculable": true,
+        "splitNumber": 5,
+        "orient": "horizontal",
+        "showLabel": true
+    }
+};
+        chart_7d6beb7622c542469f5484516ec2b51f.setOption(option_7d6beb7622c542469f5484516ec2b51f);
+    </script>
+                <div id="49158e3e8647411380766a6243e305a6" class="chart-container" style="width:1200px; height:800px;"></div>
+    <script>
+        var chart_49158e3e8647411380766a6243e305a6 = echarts.init(
+            document.getElementById('49158e3e8647411380766a6243e305a6'), 'white', {renderer: 'canvas'});
+        var option_49158e3e8647411380766a6243e305a6 = {
+    "animation": true,
+    "animationThreshold": 2000,
+    "animationDuration": 1000,
+    "animationEasing": "cubicOut",
+    "animationDelay": 0,
+    "animationDurationUpdate": 300,
+    "animationEasingUpdate": "cubicOut",
+    "animationDelayUpdate": 0,
+    "color": [
+        "#c23531",
+        "#2f4554",
+        "#61a0a8",
+        "#d48265",
+        "#749f83",
+        "#ca8622",
+        "#bda29a",
+        "#6e7074",
+        "#546570",
+        "#c4ccd3",
+        "#f05b72",
+        "#ef5b9c",
+        "#f47920",
+        "#905a3d",
+        "#fab27b",
+        "#2a5caa",
+        "#444693",
+        "#726930",
+        "#b2d235",
+        "#6d8346",
+        "#ac6767",
+        "#1d953f",
+        "#6950a1",
+        "#918597"
+    ],
+    "series": [
+        {
+            "type": "heatmap",
+            "name": "CMC10",
+            "data": [
+                [
+                    0,
+                    0,
+                    -0.606
+                ],
+                [
+                    0,
+                    9,
+                    -0.564
+                ],
+                [
+                    0,
+                    1,
+                    -0.525
+                ],
+                [
+                    0,
+                    2,
+                    -0.543
+                ],
+                [
+                    0,
+                    3,
+                    -0.5
+                ],
+                [
+                    0,
+                    4,
+                    -0.518
+                ],
+                [
+                    0,
+                    5,
+                    -0.494
+                ],
+                [
+                    0,
+                    6,
+                    -0.49
+                ],
+                [
+                    0,
+                    7,
+                    -0.513
+                ],
+                [
+                    0,
+                    8,
+                    -0.534
+                ],
+                [
+                    9,
+                    0,
+                    0.063
+                ],
+                [
+                    9,
+                    9,
+                    0.029
+                ],
+                [
+                    9,
+                    1,
+                    0.149
+                ],
+                [
+                    9,
+                    2,
+                    0.147
+                ],
+                [
+                    9,
+                    3,
+                    0.143
+                ],
+                [
+                    9,
+                    4,
+                    0.128
+                ],
+                [
+                    9,
+                    5,
+                    0.092
+                ],
+                [
+                    9,
+                    6,
+                    0.077
+                ],
+                [
+                    9,
+                    7,
+                    0.071
+                ],
+                [
+                    9,
+                    8,
+                    0.005
+                ],
+                [
+                    1,
+                    0,
+                    -0.457
+                ],
+                [
+                    1,
+                    9,
+                    -0.448
+                ],
+                [
+                    1,
+                    1,
+                    -0.568
+                ],
+                [
+                    1,
+                    2,
+                    -0.446
+                ],
+                [
+                    1,
+                    3,
+                    -0.543
+                ],
+                [
+                    1,
+                    4,
+                    -0.544
+                ],
+                [
+                    1,
+                    5,
+                    -0.569
+                ],
+                [
+                    1,
+                    6,
+                    -0.564
+                ],
+                [
+                    1,
+                    7,
+                    -0.537
+                ],
+                [
+                    1,
+                    8,
+                    -0.548
+                ],
+                [
+                    2,
+                    0,
+                    -0.501
+                ],
+                [
+                    2,
+                    9,
+                    -0.537
+                ],
+                [
+                    2,
+                    1,
+                    -0.537
+                ],
+                [
+                    2,
+                    2,
+                    -0.591
+                ],
+                [
+                    2,
+                    3,
+                    -0.495
+                ],
+                [
+                    2,
+                    4,
+                    -0.481
+                ],
+                [
+                    2,
+                    5,
+                    -0.506
+                ],
+                [
+                    2,
+                    6,
+                    -0.457
+                ],
+                [
+                    2,
+                    7,
+                    -0.496
+                ],
+                [
+                    2,
+                    8,
+                    -0.437
+                ],
+                [
+                    3,
+                    0,
+                    -0.566
+                ],
+                [
+                    3,
+                    9,
+                    -0.449
+                ],
+                [
+                    3,
+                    1,
+                    -0.395
+                ],
+                [
+                    3,
+                    2,
+                    -0.484
+                ],
+                [
+                    3,
+                    3,
+                    -0.552
+                ],
+                [
+                    3,
+                    4,
+                    -0.538
+                ],
+                [
+                    3,
+                    5,
+                    -0.458
+                ],
+                [
+                    3,
+                    6,
+                    -0.491
+                ],
+                [
+                    3,
+                    7,
+                    -0.461
+                ],
+                [
+                    3,
+                    8,
+                    -0.493
+                ],
+                [
+                    4,
+                    0,
+                    -0.423
+                ],
+                [
+                    4,
+                    9,
+                    -0.428
+                ],
+                [
+                    4,
+                    1,
+                    -0.525
+                ],
+                [
+                    4,
+                    2,
+                    -0.463
+                ],
+                [
+                    4,
+                    3,
+                    -0.436
+                ],
+                [
+                    4,
+                    4,
+                    -0.384
+                ],
+                [
+                    4,
+                    5,
+                    -0.43
+                ],
+                [
+                    4,
+                    6,
+                    -0.469
+                ],
+                [
+                    4,
+                    7,
+                    -0.529
+                ],
+                [
+                    4,
+                    8,
+                    -0.454
+                ],
+                [
+                    5,
+                    0,
+                    -0.355
+                ],
+                [
+                    5,
+                    9,
+                    -0.39
+                ],
+                [
+                    5,
+                    1,
+                    -0.43
+                ],
+                [
+                    5,
+                    2,
+                    -0.301
+                ],
+                [
+                    5,
+                    3,
+                    -0.319
+                ],
+                [
+                    5,
+                    4,
+                    -0.329
+                ],
+                [
+                    5,
+                    5,
+                    -0.403
+                ],
+                [
+                    5,
+                    6,
+                    -0.311
+                ],
+                [
+                    5,
+                    7,
+                    -0.285
+                ],
+                [
+                    5,
+                    8,
+                    -0.362
+                ],
+                [
+                    6,
+                    0,
+                    -0.321
+                ],
+                [
+                    6,
+                    9,
+                    -0.253
+                ],
+                [
+                    6,
+                    1,
+                    -0.27
+                ],
+                [
+                    6,
+                    2,
+                    -0.378
+                ],
+                [
+                    6,
+                    3,
+                    -0.308
+                ],
+                [
+                    6,
+                    4,
+                    -0.325
+                ],
+                [
+                    6,
+                    5,
+                    -0.258
+                ],
+                [
+                    6,
+                    6,
+                    -0.171
+                ],
+                [
+                    6,
+                    7,
+                    -0.208
+                ],
+                [
+                    6,
+                    8,
+                    -0.204
+                ],
+                [
+                    7,
+                    0,
+                    -0.326
+                ],
+                [
+                    7,
+                    9,
+                    -0.237
+                ],
+                [
+                    7,
+                    1,
+                    -0.248
+                ],
+                [
+                    7,
+                    2,
+                    -0.262
+                ],
+                [
+                    7,
+                    3,
+                    -0.32
+                ],
+                [
+                    7,
+                    4,
+                    -0.299
+                ],
+                [
+                    7,
+                    5,
+                    -0.249
+                ],
+                [
+                    7,
+                    6,
+                    -0.368
+                ],
+                [
+                    7,
+                    7,
+                    -0.302
+                ],
+                [
+                    7,
+                    8,
+                    -0.21
+                ],
+                [
+                    8,
+                    0,
+                    -0.118
+                ],
+                [
+                    8,
+                    9,
+                    -0.197
+                ],
+                [
+                    8,
+                    1,
+                    -0.208
+                ],
+                [
+                    8,
+                    2,
+                    -0.205
+                ],
+                [
+                    8,
+                    3,
+                    -0.204
+                ],
+                [
+                    8,
+                    4,
+                    -0.224
+                ],
+                [
+                    8,
+                    5,
+                    -0.243
+                ],
+                [
+                    8,
+                    6,
+                    -0.224
+                ],
+                [
+                    8,
+                    7,
+                    -0.223
+                ],
+                [
+                    8,
+                    8,
+                    -0.226
+                ]
+            ],
+            "label": {
+                "show": true,
+                "position": "inside",
+                "color": "#000",
+                "margin": 8
+            },
+            "rippleEffect": {
+                "show": true,
+                "brushType": "stroke",
+                "scale": 2.5,
+                "period": 4
+            }
+        }
+    ],
+    "legend": [
+        {
+            "data": [
+                "CMC10"
+            ],
+            "selected": {
+                "CMC10": true
+            },
+            "show": true
+        }
+    ],
+    "tooltip": {
+        "show": true,
+        "trigger": "item",
+        "triggerOn": "mousemove|click",
+        "axisPointer": {
+            "type": "line"
+        },
+        "textStyle": {
+            "fontSize": 14
+        },
+        "borderWidth": 0
+    },
+    "xAxis": [
+        {
+            "name": "Decile of Signals",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "yAxis": [
+        {
+            "name": "Look Back Period",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "title": [
+        {}
+    ],
+    "visualMap": {
+        "show": true,
+        "type": "continuous",
+        "min": -1,
+        "max": 2,
+        "textStyle": {
+            "color": "#000",
+            "fontSize": 14
+        },
+        "inRange": {
+            "color": [
+                "#50a3ba",
+                "#eac763",
+                "#d94e5d"
+            ]
+        },
+        "calculable": true,
+        "splitNumber": 5,
+        "orient": "horizontal",
+        "showLabel": true
+    }
+};
+        chart_49158e3e8647411380766a6243e305a6.setOption(option_49158e3e8647411380766a6243e305a6);
+    </script>
+                <div id="583959360ed34dc6a939c0b0cd904cb8" class="chart-container" style="width:1200px; height:800px;"></div>
+    <script>
+        var chart_583959360ed34dc6a939c0b0cd904cb8 = echarts.init(
+            document.getElementById('583959360ed34dc6a939c0b0cd904cb8'), 'white', {renderer: 'canvas'});
+        var option_583959360ed34dc6a939c0b0cd904cb8 = {
+    "animation": true,
+    "animationThreshold": 2000,
+    "animationDuration": 1000,
+    "animationEasing": "cubicOut",
+    "animationDelay": 0,
+    "animationDurationUpdate": 300,
+    "animationEasingUpdate": "cubicOut",
+    "animationDelayUpdate": 0,
+    "color": [
+        "#c23531",
+        "#2f4554",
+        "#61a0a8",
+        "#d48265",
+        "#749f83",
+        "#ca8622",
+        "#bda29a",
+        "#6e7074",
+        "#546570",
+        "#c4ccd3",
+        "#f05b72",
+        "#ef5b9c",
+        "#f47920",
+        "#905a3d",
+        "#fab27b",
+        "#2a5caa",
+        "#444693",
+        "#726930",
+        "#b2d235",
+        "#6d8346",
+        "#ac6767",
+        "#1d953f",
+        "#6950a1",
+        "#918597"
+    ],
+    "series": [
+        {
+            "type": "heatmap",
+            "name": "CMC15",
+            "data": [
+                [
+                    0,
+                    0,
+                    -0.541
+                ],
+                [
+                    0,
+                    9,
+                    -0.407
+                ],
+                [
+                    0,
+                    1,
+                    -0.519
+                ],
+                [
+                    0,
+                    2,
+                    -0.442
+                ],
+                [
+                    0,
+                    3,
+                    -0.486
+                ],
+                [
+                    0,
+                    4,
+                    -0.461
+                ],
+                [
+                    0,
+                    5,
+                    -0.424
+                ],
+                [
+                    0,
+                    6,
+                    -0.405
+                ],
+                [
+                    0,
+                    7,
+                    -0.385
+                ],
+                [
+                    0,
+                    8,
+                    -0.415
+                ],
+                [
+                    9,
+                    0,
+                    0.093
+                ],
+                [
+                    9,
+                    9,
+                    -0.005
+                ],
+                [
+                    9,
+                    1,
+                    0.078
+                ],
+                [
+                    9,
+                    2,
+                    0.045
+                ],
+                [
+                    9,
+                    3,
+                    0.051
+                ],
+                [
+                    9,
+                    4,
+                    0.054
+                ],
+                [
+                    9,
+                    5,
+                    -0.022
+                ],
+                [
+                    9,
+                    6,
+                    0.009
+                ],
+                [
+                    9,
+                    7,
+                    0.038
+                ],
+                [
+                    9,
+                    8,
+                    -0.022
+                ],
+                [
+                    1,
+                    0,
+                    -0.384
+                ],
+                [
+                    1,
+                    9,
+                    -0.465
+                ],
+                [
+                    1,
+                    1,
+                    -0.469
+                ],
+                [
+                    1,
+                    2,
+                    -0.453
+                ],
+                [
+                    1,
+                    3,
+                    -0.392
+                ],
+                [
+                    1,
+                    4,
+                    -0.439
+                ],
+                [
+                    1,
+                    5,
+                    -0.43
+                ],
+                [
+                    1,
+                    6,
+                    -0.459
+                ],
+                [
+                    1,
+                    7,
+                    -0.536
+                ],
+                [
+                    1,
+                    8,
+                    -0.456
+                ],
+                [
+                    2,
+                    0,
+                    -0.459
+                ],
+                [
+                    2,
+                    9,
+                    -0.408
+                ],
+                [
+                    2,
+                    1,
+                    -0.33
+                ],
+                [
+                    2,
+                    2,
+                    -0.346
+                ],
+                [
+                    2,
+                    3,
+                    -0.431
+                ],
+                [
+                    2,
+                    4,
+                    -0.406
+                ],
+                [
+                    2,
+                    5,
+                    -0.461
+                ],
+                [
+                    2,
+                    6,
+                    -0.407
+                ],
+                [
+                    2,
+                    7,
+                    -0.322
+                ],
+                [
+                    2,
+                    8,
+                    -0.394
+                ],
+                [
+                    3,
+                    0,
+                    -0.258
+                ],
+                [
+                    3,
+                    9,
+                    -0.42
+                ],
+                [
+                    3,
+                    1,
+                    -0.385
+                ],
+                [
+                    3,
+                    2,
+                    -0.39
+                ],
+                [
+                    3,
+                    3,
+                    -0.334
+                ],
+                [
+                    3,
+                    4,
+                    -0.272
+                ],
+                [
+                    3,
+                    5,
+                    -0.318
+                ],
+                [
+                    3,
+                    6,
+                    -0.398
+                ],
+                [
+                    3,
+                    7,
+                    -0.385
+                ],
+                [
+                    3,
+                    8,
+                    -0.427
+                ],
+                [
+                    4,
+                    0,
+                    -0.428
+                ],
+                [
+                    4,
+                    9,
+                    -0.369
+                ],
+                [
+                    4,
+                    1,
+                    -0.433
+                ],
+                [
+                    4,
+                    2,
+                    -0.436
+                ],
+                [
+                    4,
+                    3,
+                    -0.54
+                ],
+                [
+                    4,
+                    4,
+                    -0.54
+                ],
+                [
+                    4,
+                    5,
+                    -0.506
+                ],
+                [
+                    4,
+                    6,
+                    -0.453
+                ],
+                [
+                    4,
+                    7,
+                    -0.532
+                ],
+                [
+                    4,
+                    8,
+                    -0.421
+                ],
+                [
+                    5,
+                    0,
+                    -0.365
+                ],
+                [
+                    5,
+                    9,
+                    -0.458
+                ],
+                [
+                    5,
+                    1,
+                    -0.376
+                ],
+                [
+                    5,
+                    2,
+                    -0.356
+                ],
+                [
+                    5,
+                    3,
+                    -0.367
+                ],
+                [
+                    5,
+                    4,
+                    -0.412
+                ],
+                [
+                    5,
+                    5,
+                    -0.376
+                ],
+                [
+                    5,
+                    6,
+                    -0.39
+                ],
+                [
+                    5,
+                    7,
+                    -0.407
+                ],
+                [
+                    5,
+                    8,
+                    -0.438
+                ],
+                [
+                    6,
+                    0,
+                    -0.414
+                ],
+                [
+                    6,
+                    9,
+                    -0.299
+                ],
+                [
+                    6,
+                    1,
+                    -0.376
+                ],
+                [
+                    6,
+                    2,
+                    -0.456
+                ],
+                [
+                    6,
+                    3,
+                    -0.335
+                ],
+                [
+                    6,
+                    4,
+                    -0.318
+                ],
+                [
+                    6,
+                    5,
+                    -0.372
+                ],
+                [
+                    6,
+                    6,
+                    -0.285
+                ],
+                [
+                    6,
+                    7,
+                    -0.235
+                ],
+                [
+                    6,
+                    8,
+                    -0.25
+                ],
+                [
+                    7,
+                    0,
+                    -0.249
+                ],
+                [
+                    7,
+                    9,
+                    -0.247
+                ],
+                [
+                    7,
+                    1,
+                    -0.2
+                ],
+                [
+                    7,
+                    2,
+                    -0.142
+                ],
+                [
+                    7,
+                    3,
+                    -0.083
+                ],
+                [
+                    7,
+                    4,
+                    -0.166
+                ],
+                [
+                    7,
+                    5,
+                    -0.162
+                ],
+                [
+                    7,
+                    6,
+                    -0.306
+                ],
+                [
+                    7,
+                    7,
+                    -0.282
+                ],
+                [
+                    7,
+                    8,
+                    -0.216
+                ],
+                [
+                    8,
+                    0,
+                    -0.171
+                ],
+                [
+                    8,
+                    9,
+                    -0.041
+                ],
+                [
+                    8,
+                    1,
+                    -0.158
+                ],
+                [
+                    8,
+                    2,
+                    -0.191
+                ],
+                [
+                    8,
+                    3,
+                    -0.246
+                ],
+                [
+                    8,
+                    4,
+                    -0.201
+                ],
+                [
+                    8,
+                    5,
+                    -0.086
+                ],
+                [
+                    8,
+                    6,
+                    -0.028
+                ],
+                [
+                    8,
+                    7,
+                    -0.069
+                ],
+                [
+                    8,
+                    8,
+                    -0.08
+                ]
+            ],
+            "label": {
+                "show": true,
+                "position": "inside",
+                "color": "#000",
+                "margin": 8
+            },
+            "rippleEffect": {
+                "show": true,
+                "brushType": "stroke",
+                "scale": 2.5,
+                "period": 4
+            }
+        }
+    ],
+    "legend": [
+        {
+            "data": [
+                "CMC15"
+            ],
+            "selected": {
+                "CMC15": true
+            },
+            "show": true
+        }
+    ],
+    "tooltip": {
+        "show": true,
+        "trigger": "item",
+        "triggerOn": "mousemove|click",
+        "axisPointer": {
+            "type": "line"
+        },
+        "textStyle": {
+            "fontSize": 14
+        },
+        "borderWidth": 0
+    },
+    "xAxis": [
+        {
+            "name": "Decile of Signals",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "yAxis": [
+        {
+            "name": "Look Back Period",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "title": [
+        {}
+    ],
+    "visualMap": {
+        "show": true,
+        "type": "continuous",
+        "min": -1,
+        "max": 2,
+        "textStyle": {
+            "color": "#000",
+            "fontSize": 14
+        },
+        "inRange": {
+            "color": [
+                "#50a3ba",
+                "#eac763",
+                "#d94e5d"
+            ]
+        },
+        "calculable": true,
+        "splitNumber": 5,
+        "orient": "horizontal",
+        "showLabel": true
+    }
+};
+        chart_583959360ed34dc6a939c0b0cd904cb8.setOption(option_583959360ed34dc6a939c0b0cd904cb8);
+    </script>
+                <div id="c94f6b78fa1c4646ac766a5aaadba889" class="chart-container" style="width:1200px; height:800px;"></div>
+    <script>
+        var chart_c94f6b78fa1c4646ac766a5aaadba889 = echarts.init(
+            document.getElementById('c94f6b78fa1c4646ac766a5aaadba889'), 'white', {renderer: 'canvas'});
+        var option_c94f6b78fa1c4646ac766a5aaadba889 = {
+    "animation": true,
+    "animationThreshold": 2000,
+    "animationDuration": 1000,
+    "animationEasing": "cubicOut",
+    "animationDelay": 0,
+    "animationDurationUpdate": 300,
+    "animationEasingUpdate": "cubicOut",
+    "animationDelayUpdate": 0,
+    "color": [
+        "#c23531",
+        "#2f4554",
+        "#61a0a8",
+        "#d48265",
+        "#749f83",
+        "#ca8622",
+        "#bda29a",
+        "#6e7074",
+        "#546570",
+        "#c4ccd3",
+        "#f05b72",
+        "#ef5b9c",
+        "#f47920",
+        "#905a3d",
+        "#fab27b",
+        "#2a5caa",
+        "#444693",
+        "#726930",
+        "#b2d235",
+        "#6d8346",
+        "#ac6767",
+        "#1d953f",
+        "#6950a1",
+        "#918597"
+    ],
+    "series": [
+        {
+            "type": "heatmap",
+            "name": "CMC20",
+            "data": [
+                [
+                    0,
+                    0,
+                    -0.566
+                ],
+                [
+                    0,
+                    9,
+                    -0.456
+                ],
+                [
+                    0,
+                    1,
+                    -0.465
+                ],
+                [
+                    0,
+                    2,
+                    -0.49
+                ],
+                [
+                    0,
+                    3,
+                    -0.438
+                ],
+                [
+                    0,
+                    4,
+                    -0.452
+                ],
+                [
+                    0,
+                    5,
+                    -0.456
+                ],
+                [
+                    0,
+                    6,
+                    -0.45
+                ],
+                [
+                    0,
+                    7,
+                    -0.43
+                ],
+                [
+                    0,
+                    8,
+                    -0.434
+                ],
+                [
+                    9,
+                    0,
+                    0.194
+                ],
+                [
+                    9,
+                    9,
+                    0.008
+                ],
+                [
+                    9,
+                    1,
+                    0.148
+                ],
+                [
+                    9,
+                    2,
+                    0.112
+                ],
+                [
+                    9,
+                    3,
+                    0.098
+                ],
+                [
+                    9,
+                    4,
+                    0.096
+                ],
+                [
+                    9,
+                    5,
+                    0.083
+                ],
+                [
+                    9,
+                    6,
+                    0.092
+                ],
+                [
+                    9,
+                    7,
+                    0.07
+                ],
+                [
+                    9,
+                    8,
+                    0.031
+                ],
+                [
+                    1,
+                    0,
+                    -0.316
+                ],
+                [
+                    1,
+                    9,
+                    -0.464
+                ],
+                [
+                    1,
+                    1,
+                    -0.496
+                ],
+                [
+                    1,
+                    2,
+                    -0.473
+                ],
+                [
+                    1,
+                    3,
+                    -0.528
+                ],
+                [
+                    1,
+                    4,
+                    -0.507
+                ],
+                [
+                    1,
+                    5,
+                    -0.512
+                ],
+                [
+                    1,
+                    6,
+                    -0.542
+                ],
+                [
+                    1,
+                    7,
+                    -0.511
+                ],
+                [
+                    1,
+                    8,
+                    -0.536
+                ],
+                [
+                    2,
+                    0,
+                    -0.468
+                ],
+                [
+                    2,
+                    9,
+                    -0.471
+                ],
+                [
+                    2,
+                    1,
+                    -0.481
+                ],
+                [
+                    2,
+                    2,
+                    -0.443
+                ],
+                [
+                    2,
+                    3,
+                    -0.368
+                ],
+                [
+                    2,
+                    4,
+                    -0.376
+                ],
+                [
+                    2,
+                    5,
+                    -0.383
+                ],
+                [
+                    2,
+                    6,
+                    -0.343
+                ],
+                [
+                    2,
+                    7,
+                    -0.46
+                ],
+                [
+                    2,
+                    8,
+                    -0.398
+                ],
+                [
+                    3,
+                    0,
+                    -0.398
+                ],
+                [
+                    3,
+                    9,
+                    -0.257
+                ],
+                [
+                    3,
+                    1,
+                    -0.252
+                ],
+                [
+                    3,
+                    2,
+                    -0.383
+                ],
+                [
+                    3,
+                    3,
+                    -0.374
+                ],
+                [
+                    3,
+                    4,
+                    -0.395
+                ],
+                [
+                    3,
+                    5,
+                    -0.41
+                ],
+                [
+                    3,
+                    6,
+                    -0.365
+                ],
+                [
+                    3,
+                    7,
+                    -0.297
+                ],
+                [
+                    3,
+                    8,
+                    -0.241
+                ],
+                [
+                    4,
+                    0,
+                    -0.383
+                ],
+                [
+                    4,
+                    9,
+                    -0.427
+                ],
+                [
+                    4,
+                    1,
+                    -0.399
+                ],
+                [
+                    4,
+                    2,
+                    -0.337
+                ],
+                [
+                    4,
+                    3,
+                    -0.355
+                ],
+                [
+                    4,
+                    4,
+                    -0.326
+                ],
+                [
+                    4,
+                    5,
+                    -0.251
+                ],
+                [
+                    4,
+                    6,
+                    -0.368
+                ],
+                [
+                    4,
+                    7,
+                    -0.431
+                ],
+                [
+                    4,
+                    8,
+                    -0.524
+                ],
+                [
+                    5,
+                    0,
+                    -0.315
+                ],
+                [
+                    5,
+                    9,
+                    -0.349
+                ],
+                [
+                    5,
+                    1,
+                    -0.353
+                ],
+                [
+                    5,
+                    2,
+                    -0.171
+                ],
+                [
+                    5,
+                    3,
+                    -0.247
+                ],
+                [
+                    5,
+                    4,
+                    -0.209
+                ],
+                [
+                    5,
+                    5,
+                    -0.347
+                ],
+                [
+                    5,
+                    6,
+                    -0.268
+                ],
+                [
+                    5,
+                    7,
+                    -0.262
+                ],
+                [
+                    5,
+                    8,
+                    -0.247
+                ],
+                [
+                    6,
+                    0,
+                    -0.24
+                ],
+                [
+                    6,
+                    9,
+                    -0.167
+                ],
+                [
+                    6,
+                    1,
+                    -0.231
+                ],
+                [
+                    6,
+                    2,
+                    -0.365
+                ],
+                [
+                    6,
+                    3,
+                    -0.308
+                ],
+                [
+                    6,
+                    4,
+                    -0.324
+                ],
+                [
+                    6,
+                    5,
+                    -0.226
+                ],
+                [
+                    6,
+                    6,
+                    -0.139
+                ],
+                [
+                    6,
+                    7,
+                    -0.134
+                ],
+                [
+                    6,
+                    8,
+                    -0.214
+                ],
+                [
+                    7,
+                    0,
+                    -0.289
+                ],
+                [
+                    7,
+                    9,
+                    -0.342
+                ],
+                [
+                    7,
+                    1,
+                    -0.295
+                ],
+                [
+                    7,
+                    2,
+                    -0.307
+                ],
+                [
+                    7,
+                    3,
+                    -0.399
+                ],
+                [
+                    7,
+                    4,
+                    -0.362
+                ],
+                [
+                    7,
+                    5,
+                    -0.323
+                ],
+                [
+                    7,
+                    6,
+                    -0.4
+                ],
+                [
+                    7,
+                    7,
+                    -0.403
+                ],
+                [
+                    7,
+                    8,
+                    -0.255
+                ],
+                [
+                    8,
+                    0,
+                    -0.271
+                ],
+                [
+                    8,
+                    9,
+                    -0.026
+                ],
+                [
+                    8,
+                    1,
+                    -0.202
+                ],
+                [
+                    8,
+                    2,
+                    -0.154
+                ],
+                [
+                    8,
+                    3,
+                    -0.067
+                ],
+                [
+                    8,
+                    4,
+                    -0.104
+                ],
+                [
+                    8,
+                    5,
+                    -0.153
+                ],
+                [
+                    8,
+                    6,
+                    -0.167
+                ],
+                [
+                    8,
+                    7,
+                    -0.099
+                ],
+                [
+                    8,
+                    8,
+                    -0.121
+                ]
+            ],
+            "label": {
+                "show": true,
+                "position": "inside",
+                "color": "#000",
+                "margin": 8
+            },
+            "rippleEffect": {
+                "show": true,
+                "brushType": "stroke",
+                "scale": 2.5,
+                "period": 4
+            }
+        }
+    ],
+    "legend": [
+        {
+            "data": [
+                "CMC20"
+            ],
+            "selected": {
+                "CMC20": true
+            },
+            "show": true
+        }
+    ],
+    "tooltip": {
+        "show": true,
+        "trigger": "item",
+        "triggerOn": "mousemove|click",
+        "axisPointer": {
+            "type": "line"
+        },
+        "textStyle": {
+            "fontSize": 14
+        },
+        "borderWidth": 0
+    },
+    "xAxis": [
+        {
+            "name": "Decile of Signals",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "yAxis": [
+        {
+            "name": "Look Back Period",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "title": [
+        {}
+    ],
+    "visualMap": {
+        "show": true,
+        "type": "continuous",
+        "min": -1,
+        "max": 2,
+        "textStyle": {
+            "color": "#000",
+            "fontSize": 14
+        },
+        "inRange": {
+            "color": [
+                "#50a3ba",
+                "#eac763",
+                "#d94e5d"
+            ]
+        },
+        "calculable": true,
+        "splitNumber": 5,
+        "orient": "horizontal",
+        "showLabel": true
+    }
+};
+        chart_c94f6b78fa1c4646ac766a5aaadba889.setOption(option_c94f6b78fa1c4646ac766a5aaadba889);
+    </script>
+                <div id="fd46daf3dce8422ebb6467841a2c9e8f" class="chart-container" style="width:1200px; height:800px;"></div>
+    <script>
+        var chart_fd46daf3dce8422ebb6467841a2c9e8f = echarts.init(
+            document.getElementById('fd46daf3dce8422ebb6467841a2c9e8f'), 'white', {renderer: 'canvas'});
+        var option_fd46daf3dce8422ebb6467841a2c9e8f = {
+    "animation": true,
+    "animationThreshold": 2000,
+    "animationDuration": 1000,
+    "animationEasing": "cubicOut",
+    "animationDelay": 0,
+    "animationDurationUpdate": 300,
+    "animationEasingUpdate": "cubicOut",
+    "animationDelayUpdate": 0,
+    "color": [
+        "#c23531",
+        "#2f4554",
+        "#61a0a8",
+        "#d48265",
+        "#749f83",
+        "#ca8622",
+        "#bda29a",
+        "#6e7074",
+        "#546570",
+        "#c4ccd3",
+        "#f05b72",
+        "#ef5b9c",
+        "#f47920",
+        "#905a3d",
+        "#fab27b",
+        "#2a5caa",
+        "#444693",
+        "#726930",
+        "#b2d235",
+        "#6d8346",
+        "#ac6767",
+        "#1d953f",
+        "#6950a1",
+        "#918597"
+    ],
+    "series": [
+        {
+            "type": "heatmap",
+            "name": "CMC30",
+            "data": [
+                [
+                    0,
+                    0,
+                    -0.484
+                ],
+                [
+                    0,
+                    9,
+                    -0.388
+                ],
+                [
+                    0,
+                    1,
+                    -0.379
+                ],
+                [
+                    0,
+                    2,
+                    -0.365
+                ],
+                [
+                    0,
+                    3,
+                    -0.356
+                ],
+                [
+                    0,
+                    4,
+                    -0.353
+                ],
+                [
+                    0,
+                    5,
+                    -0.348
+                ],
+                [
+                    0,
+                    6,
+                    -0.397
+                ],
+                [
+                    0,
+                    7,
+                    -0.32
+                ],
+                [
+                    0,
+                    8,
+                    -0.344
+                ],
+                [
+                    9,
+                    0,
+                    0.027
+                ],
+                [
+                    9,
+                    9,
+                    -0.108
+                ],
+                [
+                    9,
+                    1,
+                    0.064
+                ],
+                [
+                    9,
+                    2,
+                    0.029
+                ],
+                [
+                    9,
+                    3,
+                    0.039
+                ],
+                [
+                    9,
+                    4,
+                    0.031
+                ],
+                [
+                    9,
+                    5,
+                    -0.04
+                ],
+                [
+                    9,
+                    6,
+                    0.003
+                ],
+                [
+                    9,
+                    7,
+                    0.011
+                ],
+                [
+                    9,
+                    8,
+                    -0.091
+                ],
+                [
+                    1,
+                    0,
+                    -0.243
+                ],
+                [
+                    1,
+                    9,
+                    -0.363
+                ],
+                [
+                    1,
+                    1,
+                    -0.404
+                ],
+                [
+                    1,
+                    2,
+                    -0.367
+                ],
+                [
+                    1,
+                    3,
+                    -0.389
+                ],
+                [
+                    1,
+                    4,
+                    -0.408
+                ],
+                [
+                    1,
+                    5,
+                    -0.42
+                ],
+                [
+                    1,
+                    6,
+                    -0.373
+                ],
+                [
+                    1,
+                    7,
+                    -0.488
+                ],
+                [
+                    1,
+                    8,
+                    -0.405
+                ],
+                [
+                    2,
+                    0,
+                    -0.484
+                ],
+                [
+                    2,
+                    9,
+                    -0.452
+                ],
+                [
+                    2,
+                    1,
+                    -0.397
+                ],
+                [
+                    2,
+                    2,
+                    -0.428
+                ],
+                [
+                    2,
+                    3,
+                    -0.405
+                ],
+                [
+                    2,
+                    4,
+                    -0.404
+                ],
+                [
+                    2,
+                    5,
+                    -0.443
+                ],
+                [
+                    2,
+                    6,
+                    -0.435
+                ],
+                [
+                    2,
+                    7,
+                    -0.417
+                ],
+                [
+                    2,
+                    8,
+                    -0.433
+                ],
+                [
+                    3,
+                    0,
+                    -0.361
+                ],
+                [
+                    3,
+                    9,
+                    -0.286
+                ],
+                [
+                    3,
+                    1,
+                    -0.349
+                ],
+                [
+                    3,
+                    2,
+                    -0.396
+                ],
+                [
+                    3,
+                    3,
+                    -0.442
+                ],
+                [
+                    3,
+                    4,
+                    -0.373
+                ],
+                [
+                    3,
+                    5,
+                    -0.333
+                ],
+                [
+                    3,
+                    6,
+                    -0.317
+                ],
+                [
+                    3,
+                    7,
+                    -0.286
+                ],
+                [
+                    3,
+                    8,
+                    -0.346
+                ],
+                [
+                    4,
+                    0,
+                    -0.396
+                ],
+                [
+                    4,
+                    9,
+                    -0.34
+                ],
+                [
+                    4,
+                    1,
+                    -0.426
+                ],
+                [
+                    4,
+                    2,
+                    -0.384
+                ],
+                [
+                    4,
+                    3,
+                    -0.385
+                ],
+                [
+                    4,
+                    4,
+                    -0.312
+                ],
+                [
+                    4,
+                    5,
+                    -0.262
+                ],
+                [
+                    4,
+                    6,
+                    -0.384
+                ],
+                [
+                    4,
+                    7,
+                    -0.422
+                ],
+                [
+                    4,
+                    8,
+                    -0.315
+                ],
+                [
+                    5,
+                    0,
+                    -0.213
+                ],
+                [
+                    5,
+                    9,
+                    -0.471
+                ],
+                [
+                    5,
+                    1,
+                    -0.336
+                ],
+                [
+                    5,
+                    2,
+                    -0.284
+                ],
+                [
+                    5,
+                    3,
+                    -0.288
+                ],
+                [
+                    5,
+                    4,
+                    -0.347
+                ],
+                [
+                    5,
+                    5,
+                    -0.476
+                ],
+                [
+                    5,
+                    6,
+                    -0.403
+                ],
+                [
+                    5,
+                    7,
+                    -0.429
+                ],
+                [
+                    5,
+                    8,
+                    -0.474
+                ],
+                [
+                    6,
+                    0,
+                    -0.352
+                ],
+                [
+                    6,
+                    9,
+                    -0.229
+                ],
+                [
+                    6,
+                    1,
+                    -0.206
+                ],
+                [
+                    6,
+                    2,
+                    -0.337
+                ],
+                [
+                    6,
+                    3,
+                    -0.294
+                ],
+                [
+                    6,
+                    4,
+                    -0.329
+                ],
+                [
+                    6,
+                    5,
+                    -0.219
+                ],
+                [
+                    6,
+                    6,
+                    -0.135
+                ],
+                [
+                    6,
+                    7,
+                    -0.162
+                ],
+                [
+                    6,
+                    8,
+                    -0.19
+                ],
+                [
+                    7,
+                    0,
+                    -0.126
+                ],
+                [
+                    7,
+                    9,
+                    -0.177
+                ],
+                [
+                    7,
+                    1,
+                    -0.213
+                ],
+                [
+                    7,
+                    2,
+                    -0.122
+                ],
+                [
+                    7,
+                    3,
+                    -0.167
+                ],
+                [
+                    7,
+                    4,
+                    -0.19
+                ],
+                [
+                    7,
+                    5,
+                    -0.168
+                ],
+                [
+                    7,
+                    6,
+                    -0.32
+                ],
+                [
+                    7,
+                    7,
+                    -0.274
+                ],
+                [
+                    7,
+                    8,
+                    -0.161
+                ],
+                [
+                    8,
+                    0,
+                    -0.226
+                ],
+                [
+                    8,
+                    9,
+                    -0.021
+                ],
+                [
+                    8,
+                    1,
+                    -0.236
+                ],
+                [
+                    8,
+                    2,
+                    -0.212
+                ],
+                [
+                    8,
+                    3,
+                    -0.172
+                ],
+                [
+                    8,
+                    4,
+                    -0.181
+                ],
+                [
+                    8,
+                    5,
+                    -0.151
+                ],
+                [
+                    8,
+                    6,
+                    -0.096
+                ],
+                [
+                    8,
+                    7,
+                    -0.069
+                ],
+                [
+                    8,
+                    8,
+                    -0.064
+                ]
+            ],
+            "label": {
+                "show": true,
+                "position": "inside",
+                "color": "#000",
+                "margin": 8
+            },
+            "rippleEffect": {
+                "show": true,
+                "brushType": "stroke",
+                "scale": 2.5,
+                "period": 4
+            }
+        }
+    ],
+    "legend": [
+        {
+            "data": [
+                "CMC30"
+            ],
+            "selected": {
+                "CMC30": true
+            },
+            "show": true
+        }
+    ],
+    "tooltip": {
+        "show": true,
+        "trigger": "item",
+        "triggerOn": "mousemove|click",
+        "axisPointer": {
+            "type": "line"
+        },
+        "textStyle": {
+            "fontSize": 14
+        },
+        "borderWidth": 0
+    },
+    "xAxis": [
+        {
+            "name": "Decile of Signals",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "yAxis": [
+        {
+            "name": "Look Back Period",
+            "show": true,
+            "scale": false,
+            "nameLocation": "end",
+            "nameGap": 15,
+            "gridIndex": 0,
+            "inverse": false,
+            "offset": 0,
+            "splitNumber": 5,
+            "minInterval": 0,
+            "splitLine": {
+                "show": false,
+                "lineStyle": {
+                    "width": 1,
+                    "opacity": 1,
+                    "curveness": 0,
+                    "type": "solid"
+                }
+            },
+            "data": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+            ]
+        }
+    ],
+    "title": [
+        {}
+    ],
+    "visualMap": {
+        "show": true,
+        "type": "continuous",
+        "min": -1,
+        "max": 2,
+        "textStyle": {
+            "color": "#000",
+            "fontSize": 14
+        },
+        "inRange": {
+            "color": [
+                "#50a3ba",
+                "#eac763",
+                "#d94e5d"
+            ]
+        },
+        "calculable": true,
+        "splitNumber": 5,
+        "orient": "horizontal",
+        "showLabel": true
+    }
+};
+        chart_fd46daf3dce8422ebb6467841a2c9e8f.setOption(option_fd46daf3dce8422ebb6467841a2c9e8f);
+    </script>
+    </div>
+
+    <script>
+    </script>
+    <script>
+        (function() {
+            containers = document.getElementsByClassName("chart-container");
+            if(containers.length > 0) {
+                containers[0].style.display = "block";
+            }
+        })()
+
+        function showChart(evt, chartID) {
+            let containers = document.getElementsByClassName("chart-container");
+            for (let i = 0; i < containers.length; i++) {
+                containers[i].style.display = "none";
+            }
+
+            let tablinks = document.getElementsByClassName("tablinks");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = "tablinks";
+            }
+
+            document.getElementById(chartID).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+    </script>
+</body>
+</html>
