@@ -561,12 +561,11 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
                 except:
                     logging.exception(f'Out-of-Range {date}-{ticker}')
                     continue
-
             """Compute the most recent available date and cumulate the posts 
             Monday's 2:30PM posts = previous Friday 3PM - Monday 2:30PM"""
-            date_range = date_range[::-1]
+            date_range_rev = date_range[::-1]
             count_non_working_day = 0
-            for past_date in date_range[1:]:
+            for past_date in date_range_rev[1:]:
                 count_non_working_day += 1
                 if cal.is_working_day(past_date):
                     break
@@ -654,7 +653,6 @@ if __name__ == '__main__':
                 curr_str = curr.strftime('%Y-%m-%d')
                 make_log(msg='\n'.join(['-' * 50, ' ' * 20 + curr_str, '-' * 50]), level='info')
                 time.sleep(61)
-
 
             if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
                 _doing = '1230PM'
