@@ -611,6 +611,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
 
     save_tosql(current_table, _time, curr_date)
 
+
 def save_tosql(current_table, which_table, curr_date):
     from sqlalchemy import create_engine
     import pymssql
@@ -646,7 +647,7 @@ def make_log(msg, level):
     if level == 'info':
         logging.critical(msg)
     else:
-        logging.error((msg))
+        logging.error(msg)
 
 
 if __name__ == '__main__':

@@ -119,10 +119,10 @@ def download_prices_from_jq():
         for ticker in csi300_list:
             bar.next()
             formated_ticker = jq.normalize_code(ticker)
-            curr_prices = jq.get_price(formated_ticker, start_date='2015-01-01', end_date='2019-07-31')
+            curr_prices = jq.get_price(formated_ticker, start_date='2019-11-01', end_date='2019-12-02')
             curr_prices = curr_prices.loc[:, ['open', 'close']]
             curr_prices.columns = ['PX_OPEN', 'PX_LAST']
-            curr_prices.to_csv(f'data/prices/{ticker}.csv')
+            curr_prices.to_csv(f'data/csv_history/prices/{ticker}.csv')
 
 
 def check_members():
@@ -242,11 +242,65 @@ def add_sentiment_label():
             curr_df.to_csv('data/historical/sentiment/' + file, encoding='utf_8_sig')
 
 
+def download_current_universe_price():
+    # tickers = jq.get_index_stocks('000300.XSHG')
+    # with Bar('Downloading prices', max=len(tickers)) as bar:
+    #     for ticker in tickers:
+    #         bar.next()
+    #         curr_price = jq.get_price(ticker, start_date='2019-11-01', end_date='2019-12-02')
+    #         name = ticker.split('.')[0]
+    #         curr_price.to_csv(f'csv_history/prices/{name}.csv')
+    #
+    # files = os.listdir('csv_history/prices')
+    # files = [file for file in files if 'csv' in file]
+    # with Bar('Downloading prices', max=len(files)) as bar:
+    #     for file in files:
+    #         bar.next()
+    #         curr_df = pd.read_csv('csv_history/prices/' + file, index_col=0).close
+    #         curr_df.name = file.split('.')[0]
+    #         try:
+    #             all_df = pd.concat([all_df, curr_df], axis=1)
+    #         except:
+    #             all_df = curr_df
+    # ret_matrix = (all_df.shift(-1) - all_df) / all_df
+    # ret_matrix.dropna(inplace=True)
+    # ret_matrix.to_csv('csv_history/ret_matrix.csv')
+
+    csi300 = jq.get_price('000300.XSHG', start_date='2019-11-01', end_date='2019-12-02').close
+    csi300 = (csi300.shift(-1) - csi300) / csi300
+    csi300.to_csv('csv_history/csi300.csv')
+
+def quick_backtest():
+    files = os.listdir('csv_history/')
+    files = [file for file in files if re.match('table_230.+', file)]
+    targets = []
+    for file in files:
+        curr_df = pd.read_excel('csv_history/' + file, index_col=0)
+        date = curr_df['Date'][0]
+        curr_signal = curr_df.index[curr_df['Rank_neg_8'] == 10]
+        curr_signal = [signal.split(' ')[0] for signal in curr_signal]
+        targets.append((date, curr_signal))
+
+    csi300 = pd.read_csv('csv_history/csi300.csv', index_col=0, names=['csi300'])
+    ret_matrix = pd.read_csv('csv_history/ret_matrix.csv', index_col=0)
+    cum_ret = 1
+    rets = []
+    for combo in targets:
+        if combo[0] == '2019-12-02':
+            continue
+        curr_ret = ret_matrix.loc[combo]
+        ave_ret = curr_ret.mean()
+        rets.append(ave_ret - csi300.loc[combo[0], 'csi300'])
+        cum_ret = cum_ret * (1 + ave_ret - csi300.loc[combo[0], 'csi300'])
+    print(rets)
+    print(cum_ret)
+
+
 if __name__ == '__main__':
-    # jq.auth('18810906018', '906018')
+    jq.auth('18810906018', '906018')
     # extract_excess_returns_to_r()
     # download_members()
-    # download_prices_from_jq()
+
     # check_members()
     # decompo_pnls(f'~/Desktop/result/large and mid cap/individual_pnl_cmc15_ret_0.csv', 'long')
     # create_caps()
@@ -254,5 +308,7 @@ if __name__ == '__main__':
     # add_sentiment_to_posts()
     # create_new_benchmark()
     # add_sentiment_label()
-    (_, time_used) = run_by_mp('000002.csv')
-    print(time_used)
+    # (_, time_used) = run_by_mp('000002.csv')
+    # print(time_used)
+    download_current_universe_price()
+    quick_backtest()
