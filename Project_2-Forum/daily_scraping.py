@@ -1,3 +1,6 @@
+""""
+This program is created for """
+
 import bs4
 import numpy as np
 import pandas as pd
@@ -33,6 +36,7 @@ chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
 chrome_options.add_argument('--no-proxy-server')
 chrome_options.add_argument("--proxy-server='direct://'")
 chrome_options.add_argument("--proxy-bypass-list=*")
+
 
 # def get_proxy():
 #     proxies = []
@@ -581,9 +585,9 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
             num_posts_neg_8 = lookback_8[lookback_8['Sentiment'] == 'Negative']['Sentiment'].count()
             num_posts_all_10 = lookback_10['Sentiment'].count()
 
-            info_list.append((ticker,
+            info_list.append((ticker + ' CH',
                               end.strftime('%Y-%m-%d'),
-                              end.strftime('%H-%M-%S'),
+                              end.strftime('%H:%M:%S'),
                               num_posts_all,
                               num_posts_pos,
                               num_posts_neg,

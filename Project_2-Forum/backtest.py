@@ -439,16 +439,16 @@ class Backtest:
                     curr_df.index = pd.to_datetime(curr_df.index)
                     curr_df = curr_df[(curr_df.index >= self._start) & (curr_df.index <= self._end)]
                     curr_df = curr_df.astype(float)
-                    curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')] -
+                    curr_df.loc[:, (ticker, 'cmo_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-1) -
                                                            curr_df.loc[:, (ticker, 'open')]) / \
                                                           curr_df.loc[:, (ticker, 'open')]
-                    curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')] -
-                                                           curr_df.loc[:, (ticker, 'open')].shift(1)) / \
-                                                          curr_df.loc[:, (ticker, 'open')].shift(1)
+                    curr_df.loc[:, (ticker, 'omo_ret')] = (curr_df.loc[:, (ticker, 'open')].shift(-1) -
+                                                           curr_df.loc[:, (ticker, 'open')]) / \
+                                                          curr_df.loc[:, (ticker, 'open')]
                     for idx in range(1, self.number_of_prices_delay):
-                        curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')] -
-                                                                     curr_df.loc[:, (ticker, 'close')].shift(idx)) / \
-                                                                    curr_df.loc[:, (ticker, 'close')].shift(idx)
+                        curr_df.loc[:, (ticker, f'cmc{idx}_ret')] = (curr_df.loc[:, (ticker, 'close')].shift(-idx) -
+                                                                     curr_df.loc[:, (ticker, 'close')]) / \
+                                                                    curr_df.loc[:, (ticker, 'close')]
 
                     curr_df.loc[:, (ticker, 'ompc_ret')] = (curr_df.loc[:, (ticker, 'open')] -
                                                                  curr_df.loc[:, (ticker, 'close')].shift(-1)) / \
@@ -705,7 +705,6 @@ class Backtest:
 
 
 def run_backtest():
-
     """
     1. Run by decile
     2. Run by counting different periods posts
@@ -718,7 +717,7 @@ def run_backtest():
         if modes == 'all':
             modes = [f'cmc{idx}_ret' for idx in [1, 3, 5, 10, 15, 20, 30]]
     except IndexError:
-        modes = ['cmc10_ret']
+        modes = ['cmc1_ret']
 
     # cs = CrossSignal(start=start, end=end)
     # bs = Backtest(cs.equal_weight_decile_long_short(), start=start, end=end,
@@ -729,8 +728,8 @@ def run_backtest():
 
     for counting in range(1, 11):
         for decile in range(10, 0, -1):
-    # for decile in [1]:
-    #     for counting in [5]:
+    # for decile in [10]:
+    #     for counting in [8]:
             print('*' * 40)
             print(' ' * 9, f'Decile {decile} - Counting {counting}')
             print('*' * 40)
