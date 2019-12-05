@@ -243,28 +243,28 @@ def add_sentiment_label():
 
 
 def download_current_universe_price():
-    # tickers = jq.get_index_stocks('000300.XSHG')
-    # with Bar('Downloading prices', max=len(tickers)) as bar:
-    #     for ticker in tickers:
-    #         bar.next()
-    #         curr_price = jq.get_price(ticker, start_date='2019-11-01', end_date='2019-12-02')
-    #         name = ticker.split('.')[0]
-    #         curr_price.to_csv(f'csv_history/prices/{name}.csv')
-    #
-    # files = os.listdir('csv_history/prices')
-    # files = [file for file in files if 'csv' in file]
-    # with Bar('Downloading prices', max=len(files)) as bar:
-    #     for file in files:
-    #         bar.next()
-    #         curr_df = pd.read_csv('csv_history/prices/' + file, index_col=0).close
-    #         curr_df.name = file.split('.')[0]
-    #         try:
-    #             all_df = pd.concat([all_df, curr_df], axis=1)
-    #         except:
-    #             all_df = curr_df
-    # ret_matrix = (all_df.shift(-1) - all_df) / all_df
-    # ret_matrix.dropna(inplace=True)
-    # ret_matrix.to_csv('csv_history/ret_matrix.csv')
+    tickers = jq.get_index_stocks('000300.XSHG')
+    with Bar('Downloading prices', max=len(tickers)) as bar:
+        for ticker in tickers:
+            bar.next()
+            curr_price = jq.get_price(ticker, start_date='2019-11-01', end_date='2019-12-02')
+            name = ticker.split('.')[0]
+            curr_price.to_csv(f'csv_history/prices/{name}.csv')
+
+    files = os.listdir('csv_history/prices')
+    files = [file for file in files if 'csv' in file]
+    with Bar('Downloading prices', max=len(files)) as bar:
+        for file in files:
+            bar.next()
+            curr_df = pd.read_csv('csv_history/prices/' + file, index_col=0).close
+            curr_df.name = file.split('.')[0]
+            try:
+                all_df = pd.concat([all_df, curr_df], axis=1)
+            except:
+                all_df = curr_df
+    ret_matrix = (all_df.shift(-1) - all_df) / all_df
+    ret_matrix.dropna(inplace=True)
+    ret_matrix.to_csv('csv_history/ret_matrix.csv')
 
     csi300 = jq.get_price('000300.XSHG', start_date='2019-11-01', end_date='2019-12-02').close
     csi300 = (csi300.shift(-1) - csi300) / csi300

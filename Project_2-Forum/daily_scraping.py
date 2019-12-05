@@ -23,7 +23,7 @@ from openpyxl.formatting.rule import DataBarRule
 
 logging.basicConfig(filename=f'logs/daily_routine_{dt.datetime.now().year}{dt.datetime.now().month}'
                              f'{dt.datetime.now().day}_{dt.datetime.now().hour}.log',
-                    filemode='w', format='\n%(message)s', level=logging.CRITICAL)
+                    filemode='w', format='\n%(message)s', level=logging.ERROR)
 lock = threading.RLock()
 processer_lock = mp.Lock()
 chrome_options = Options()
@@ -126,7 +126,7 @@ class Stock:
     def call_webdriver(self):
         first_page = f'http://guba.eastmoney.com/list,{self._ticker}.html'  # Use selenium to get the total pages
         try:
-            with webdriver.Chrome('C:/webdriver/chromedriver.exe', options=chrome_options) as driver:
+            with webdriver.Chrome('./chromedriver', options=chrome_options) as driver:
                 driver.set_page_load_timeout(15)
                 driver.get(first_page)
                 soup = bs4.BeautifulSoup(driver.page_source, 'html.parser')
@@ -145,9 +145,9 @@ class Stock:
         :return: True/False indicating that whether the stock is acquired successfully or not
         """
         start = time.time()
-        new_thread = threading.Thread(target=self.call_webdriver, daemon=True)
-        new_thread.start()
-
+        # new_thread = threading.Thread(target=self.call_webdriver, daemon=True)
+        # new_thread.start()
+        self.call_webdriver()
         """
         Download all the websites and join them into a single string variable (all_in_one) for parsing
         """
@@ -195,12 +195,11 @@ class Stock:
         download_complete = False
         count = 0
 
-        dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily/{self._ticker}')
+        dates = os.listdir(f'daily/{self._ticker}')
         dates = [dt.datetime.strptime(date.split('.')[0], '%Y-%m-%d') for date in dates
                  if re.match('[\d]+-[\d]+-[\d]+.csv', date)]
         max_date = max(dates).strftime('%Y-%m-%d')
-        df = pd.read_csv(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily'
-                         f'/{self._ticker}/{max_date}.csv', index_col=0, parse_dates=True)
+        df = pd.read_csv(f'daily/{self._ticker}/{max_date}.csv', index_col=0, parse_dates=True)
         latest_data = df.index[0]
         while (not download_complete) and (max_pages >= 1):
             if count == 1:
@@ -389,37 +388,33 @@ def run_update_historical_data(args):
                 formated_df.loc[:, 'Time'] = formated_df['Datetime'].apply(
                     lambda row: dt.datetime.strftime(row, '%H:%M:%S'))
 
-                if not os.path.exists(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily/{ticker}'):
-                    os.mkdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily/{ticker}')
+                if not os.path.exists(f'daily/{ticker}'):
+                    os.mkdir(f'daily/{ticker}')
 
-                all_existed_date = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/'
-                                              f'daily/{ticker}')
+                all_existed_date = os.listdir(f'daily/{ticker}')
                 all_existed_date = [date.split('.')[0] for date in all_existed_date
                                     if re.match('[\d]+-[\d]+-[\d]+.csv', date)]
                 if all_existed_date:
                     """Update largest date in the folder"""
                     max_date = max([dt.datetime.strptime(date, '%Y-%m-%d') for date in all_existed_date])
                     max_date = max_date.strftime('%Y-%m-%d')
-                    prev_df = pd.read_csv('//fileserver01/limdata/data/individual staff folders/andrew li/daily/'
-                                          '{}/{}.csv'.format(ticker, max_date),
+                    prev_df = pd.read_csv('daily/{}/{}.csv'.format(ticker, max_date),
                                           index_col=0, parse_dates=True)
                     filtered_df = formated_df[formated_df['Date'] == max_date]
                     filtered_df.set_index('Datetime', inplace=True)
                     filtered_df = filtered_df[(filtered_df.index > prev_df.index[0])]
                     filtered_df.loc[:, 'Sentiment']  = \
-                        filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments >= 0.5 else 'Negative')
+                        filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP('1'+x).sentiments >= 0.5 else 'Negative')
                     prev_df = pd.concat([filtered_df, prev_df], sort=True)
-                    prev_df.to_csv(f'//fileserver01/limdata/data/individual staff folders/andrew li/'
-                                   f'daily/{ticker}/{max_date}.csv', encoding='utf_8_sig')
+                    prev_df.to_csv(f'daily/{ticker}/{max_date}.csv', encoding='utf_8_sig')
 
                 date_labels = np.unique(formated_df['Date']).tolist()
                 for date in date_labels:
                     if not date in all_existed_date:
                         filtered_df = formated_df[formated_df['Date'] == date]
                         filtered_df.loc[:, 'Sentiment'] = \
-                            filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments >= 0.5 else 'Negative')
-                        filtered_df.to_csv(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily'
-                                           f'/{ticker}/{date}.csv', index=False, encoding='utf_8_sig')
+                            filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP('1'+x).sentiments >= 0.5 else 'Negative')
+                        filtered_df.to_csv(f'daily/{ticker}/{date}.csv', index=False, encoding='utf_8_sig')
 
                 return ticker, True, time_parsing, time_web
                 # else:
@@ -502,7 +497,6 @@ def update(num_pages, num_cores=4, num_thread=5):
         with open('data/current_list.pkl', 'rb') as f:
             csi300 = pickle.load(f)
     csi300 = [ticker.split('.')[0] for ticker in csi300][:300]
-
     """Number of wanted pages"""
     (curr_list, time_web, time_parsing), time_used = run_by_historical_multiprocesses(csi300, num_pages,
                                                                                       num_cores, num_thread)
@@ -542,7 +536,7 @@ def update(num_pages, num_cores=4, num_thread=5):
 def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: str):
     curr_date = end.strftime('%Y-%m-%d')
 
-    files = os.listdir('//fileserver01/limdata/data/individual staff folders/andrew li/daily')
+    files = os.listdir('daily')
     tickers = [file for file in files if re.match('[\d]+', file)]
     info_list = []
     date_range = pd.date_range(start=start, end=end, normalize=True)
@@ -552,12 +546,10 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
             for date in date_range_str:
                 try:
                     try:
-                        curr_date_df = pd.read_csv(f'//fileserver01/limdata/data/individual staff folders/'
-                                                   f'andrew li/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
+                        curr_date_df = pd.read_csv(f'daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
                         curr_ticker = pd.concat([curr_date_df, curr_ticker], sort=True)
                     except UnboundLocalError:
-                        curr_ticker = pd.read_csv(f'//fileserver01/limdata/data/individual staff folders/'
-                                                   f'andrew li/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
+                        curr_ticker = pd.read_csv(f'daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
                 except:
                     logging.exception(f'Out-of-Range {date}-{ticker}')
                     continue
@@ -605,8 +597,8 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
     current_table['Rank_neg_8'] = np.ceil(current_table['Num_neg_8'].rank(axis=0, pct=True).mul(10)).astype(int)
     current_table['Rank_all_10'] = np.ceil(current_table['Num_all_10'].rank(axis=0,pct=True).mul(10)).astype(int)
 
-    save_tosql(current_table, _time, curr_date)
-
+    # save_tosql(current_table, _time, curr_date)
+    current_table.to_csv(f'csv_history/table_{_time}_{curr_date}.csv', index=False)
 
 def save_tosql(current_table, which_table, curr_date):
     from sqlalchemy import create_engine
@@ -647,53 +639,53 @@ def make_log(msg, level):
 
 
 if __name__ == '__main__':
-    while True:
-        try:
-            if time.localtime().tm_hour == 9 and (time.localtime().tm_min == 0):
-                curr = dt.datetime.now()
-                curr_str = curr.strftime('%Y-%m-%d')
-                make_log(msg='\n'.join(['-' * 50, ' ' * 20 + curr_str, '-' * 50]), level='info')
-                time.sleep(61)
-
-            if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
-                _doing = '1230PM'
-                today = dt.datetime.now()
-                today_str = today.strftime('%Y-%m-%d')
-                make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 1230PM']),
-                         level='info')
-                update(-1, num_cores=1, num_thread=1)
-                make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 1230PM']),
-                         level='info')
-                dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/csv_history')
-                dates = [dt.datetime.strptime(re.findall('table_1230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
-                         for date in dates if re.match('table_1230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
-                try:
-                    recorded_date = max(dates)
-                    date_range = pd.date_range(start=recorded_date, end=today, normalize=True)[1:]
-                except:
-                    date_range = [today]
-                for target_date in date_range:
-                    prev_date = target_date - dt.timedelta(10)
-                    target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 12, 30)
-                    target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
-
-                    curr_date = target_date.strftime('%Y-%m-%d')
-                    make_log(msg='\n'.join(['*' * 50, f'Creating summary table of {curr_date} - 1230PM']),
-                             level='info')
-                    create_current_summary_table(target_start_date, target_end_date, '1230PM')
-                    make_log('\n'.join([f'Successfully updated the database of {curr_date} - 1230PM', '*' * 50]),
-                             level='info')
-
-            elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
+    # while True:
+    #     try:
+    #         if time.localtime().tm_hour == 9 and (time.localtime().tm_min == 0):
+    #             curr = dt.datetime.now()
+    #             curr_str = curr.strftime('%Y-%m-%d')
+    #             make_log(msg='\n'.join(['-' * 50, ' ' * 20 + curr_str, '-' * 50]), level='info')
+    #             time.sleep(61)
+    #
+    #         if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
+    #             _doing = '1230PM'
+    #             today = dt.datetime.now()
+    #             today_str = today.strftime('%Y-%m-%d')
+    #             make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 1230PM']),
+    #                      level='info')
+    #             update(-1, num_cores=1, num_thread=1)
+    #             make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 1230PM']),
+    #                      level='info')
+    #             dates = os.listdir(f'csv_history')
+    #             dates = [dt.datetime.strptime(re.findall('table_1230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
+    #                      for date in dates if re.match('table_1230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
+    #             try:
+    #                 recorded_date = max(dates)
+    #                 date_range = pd.date_range(start=recorded_date, end=today, normalize=True)[1:]
+    #             except:
+    #                 date_range = [today]
+    #             for target_date in date_range:
+    #                 prev_date = target_date - dt.timedelta(10)
+    #                 target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 12, 30)
+    #                 target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
+    #
+    #                 curr_date = target_date.strftime('%Y-%m-%d')
+    #                 make_log(msg='\n'.join(['*' * 50, f'Creating summary table of {curr_date} - 1230PM']),
+    #                          level='info')
+    #                 create_current_summary_table(target_start_date, target_end_date, '1230PM')
+    #                 make_log('\n'.join([f'Successfully updated the database of {curr_date} - 1230PM', '*' * 50]),
+    #                          level='info')
+    #
+    #         elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
                 _doing = '230PM'
                 today = dt.datetime.now()
                 today_str = today.strftime('%Y-%m-%d')
                 make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 230PM']),
                          level='info')
-                update(-1, num_cores=1, num_thread=1)
+                # update(200, num_cores=2, num_thread=5)
                 make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 230PM']),
                          level='info')
-                dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/csv_history')
+                dates = os.listdir(f'csv_history')
                 dates = [dt.datetime.strptime(re.findall('table_230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
                          for date in dates if re.match('table_230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
                 try:
@@ -711,11 +703,11 @@ if __name__ == '__main__':
                     create_current_summary_table(target_start_date, target_end_date, '230PM')
                     make_log('\n'.join([f'Successfully updated the database of {curr_date} - 230PM', '*' * 50]),
                              level='info')
-            time.sleep(30)
-
-        except Exception as e:
-            logging.exception('message')
-            make_log('\n'.join(['*' * 50, f'Unexpected error detected while doing {today_str} - {_doing}'.upper(),
-                                'Due to following error - ']), level='info')
-            make_log(e, level='info')
-            print(e)
+        #     time.sleep(30)
+        #
+        # except Exception as e:
+        #     logging.exception('message')
+        #     make_log('\n'.join(['*' * 50, f'Unexpected error detected while doing {today_str} - {_doing}'.upper(),
+        #                         'Due to following error - ']), level='info')
+        #     make_log(e, level='info')
+        #     print(e)
