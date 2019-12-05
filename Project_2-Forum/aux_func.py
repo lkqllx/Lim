@@ -242,35 +242,36 @@ def add_sentiment_label():
             curr_df.to_csv('data/historical/sentiment/' + file, encoding='utf_8_sig')
 
 
-def download_current_universe_price():
-    # tickers = jq.get_index_stocks('000300.XSHG')
-    # with Bar('Downloading prices', max=len(tickers)) as bar:
-    #     for ticker in tickers:
-    #         bar.next()
-    #         curr_price = jq.get_price(ticker, start_date='2019-11-01', end_date='2019-12-02')
-    #         name = ticker.split('.')[0]
-    #         curr_price.to_csv(f'csv_history/prices/{name}.csv')
-    #
-    # files = os.listdir('csv_history/prices')
-    # files = [file for file in files if 'csv' in file]
-    # with Bar('Downloading prices', max=len(files)) as bar:
-    #     for file in files:
-    #         bar.next()
-    #         curr_df = pd.read_csv('csv_history/prices/' + file, index_col=0).close
-    #         curr_df.name = file.split('.')[0]
-    #         try:
-    #             all_df = pd.concat([all_df, curr_df], axis=1)
-    #         except:
-    #             all_df = curr_df
-    # ret_matrix = (all_df.shift(-1) - all_df) / all_df
-    # ret_matrix.dropna(inplace=True)
-    # ret_matrix.to_csv('csv_history/ret_matrix.csv')
+def download_current_universe_price(date):
+    jq.auth('18810906018', '906018')
+    tickers = jq.get_index_stocks('000300.XSHG')
+    with Bar('Downloading prices', max=len(tickers)) as bar:
+        for ticker in tickers:
+            bar.next()
+            curr_price = jq.get_price(ticker, start_date='2019-11-01', end_date=date)
+            name = ticker.split('.')[0]
+            curr_price.to_csv(f'csv_history/prices/{name}.csv')
 
-    csi300 = jq.get_price('000300.XSHG', start_date='2019-11-01', end_date='2019-12-03').close
+    files = os.listdir('csv_history/prices')
+    files = [file for file in files if 'csv' in file]
+    with Bar('Computing returns', max=len(files)) as bar:
+        for file in files:
+            bar.next()
+            curr_df = pd.read_csv('csv_history/prices/' + file, index_col=0).close
+            curr_df.name = file.split('.')[0]
+            try:
+                all_df = pd.concat([all_df, curr_df], axis=1)
+            except:
+                all_df = curr_df
+    ret_matrix = (all_df.shift(-1) - all_df) / all_df
+    ret_matrix.dropna(inplace=True)
+    ret_matrix.to_csv('csv_history/ret_matrix.csv')
+
+    csi300 = jq.get_price('000300.XSHG', start_date='2019-11-01', end_date=date).close
     csi300 = (csi300.shift(-1) - csi300) / csi300
     csi300.to_csv('csv_history/csi300.csv')
 
-def quick_backtest():
+def quick_backtest(curr_date):
     files = os.listdir('csv_history/')
     files = [file for file in files if re.match('table_230.+', file)]
     targets = []
@@ -281,12 +282,13 @@ def quick_backtest():
         curr_signal = [signal.split(' ')[0] for signal in curr_signal]
         targets.append((date, curr_signal))
 
+    targets = sorted(targets, key=lambda x: dt.datetime.strptime(x[0], '%Y-%m-%d'))
     csi300 = pd.read_csv('csv_history/csi300.csv', index_col=0, names=['csi300'])
     ret_matrix = pd.read_csv('csv_history/ret_matrix.csv', index_col=0)
     cum_ret = 1
     rets = []
     for combo in targets:
-        if combo[0] == '2019-12-02':
+        if combo[0] == curr_date:
             continue
         curr_ret = ret_matrix.loc[combo]
         ave_ret = curr_ret.mean()
@@ -297,7 +299,7 @@ def quick_backtest():
 
 
 if __name__ == '__main__':
-    jq.auth('18810906018', '906018')
+    # jq.auth('18810906018', '906018')
     # extract_excess_returns_to_r()
     # download_members()
 
@@ -310,5 +312,6 @@ if __name__ == '__main__':
     # add_sentiment_label()
     # (_, time_used) = run_by_mp('000002.csv')
     # print(time_used)
-    download_current_universe_price()
-    quick_backtest()
+    date = '2019-12-05'
+    # download_current_universe_price(date)
+    quick_backtest(date)
