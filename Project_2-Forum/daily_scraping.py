@@ -1,5 +1,8 @@
 """"
-This program is created for """
+This program is by Andrew LI for retrieving the EastMoney forum information
+Multi-processes and multi-threads have been enabled but we may not be able
+to scrape the forum in full speed as they may block our IP address.
+"""
 
 import bs4
 import numpy as np
@@ -411,7 +414,7 @@ def run_update_historical_data(args):
                     filtered_df.set_index('Datetime', inplace=True)
                     filtered_df = filtered_df[(filtered_df.index > prev_df.index[0])]
                     filtered_df.loc[:, 'Sentiment']  = \
-                        filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments >= 0.5 else 'Negative')
+                        filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x+'1').sentiments >= 0.5 else 'Negative')
                     prev_df = pd.concat([filtered_df, prev_df], sort=True)
                     prev_df.to_csv(f'//fileserver01/limdata/data/individual staff folders/andrew li/'
                                    f'daily/{ticker}/{max_date}.csv', encoding='utf_8_sig')
@@ -421,7 +424,7 @@ def run_update_historical_data(args):
                     if not date in all_existed_date:
                         filtered_df = formated_df[formated_df['Date'] == date]
                         filtered_df.loc[:, 'Sentiment'] = \
-                            filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x).sentiments >= 0.5 else 'Negative')
+                            filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x+'1').sentiments >= 0.5 else 'Negative')
                         filtered_df.to_csv(f'//fileserver01/limdata/data/individual staff folders/andrew li/daily'
                                            f'/{ticker}/{date}.csv', index=False, encoding='utf_8_sig')
 
@@ -522,6 +525,7 @@ def update(num_pages, num_cores=4, num_thread=5):
     count = 5
     while (not all_succesful) and count >= 0:
         time.sleep(60)
+
         try:
             print('Failed Ticker', f'\n, '.join(not_succesful_list))
             (new_curr_list, time_web, time_parsing), time_used = run_by_historical_multiprocesses(not_succesful_list,
@@ -651,21 +655,37 @@ def make_log(msg, level):
 
 
 if __name__ == '__main__':
+    """
+    Main block to start the program
+    At 9:00 AM, the program will write the date into log.
+    
+    At 12:30 PM, the program will update the forum data into share drive
+    and create summary table 
+    
+    At 2:30 PM, the program will update the forum data second time and
+    create the summary table which will be saved into SQL database
+    """
     while True:
         try:
             if time.localtime().tm_hour == 9 and (time.localtime().tm_min == 0):
+                """9 AM - Log the date"""
                 curr = dt.datetime.now()
                 curr_str = curr.strftime('%Y-%m-%d')
                 make_log(msg='\n'.join(['-' * 50, ' ' * 20 + curr_str, '-' * 50]), level='info')
                 time.sleep(61)
 
             if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
+                """12:30 PM - Retrieve data from forum and create summary table"""
                 _doing = '1230PM'
                 today = dt.datetime.now()
                 today_str = today.strftime('%Y-%m-%d')
                 make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 1230PM']),
                          level='info')
+
+                # Place to update the forum data
+                # Currently, the multi-processor part has been disabled
                 update(-1, num_cores=1, num_thread=1)
+
                 make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 1230PM']),
                          level='info')
                 dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/csv_history')
@@ -689,12 +709,17 @@ if __name__ == '__main__':
                              level='info')
 
             elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
+                """2:30 PM - Retrieve data and create summary table"""
                 _doing = '230PM'
                 today = dt.datetime.now()
                 today_str = today.strftime('%Y-%m-%d')
                 make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 230PM']),
                          level='info')
+
+                # Place to update the forum data
+                # Currently, the multi-processor part has been disabled
                 update(-1, num_cores=1, num_thread=1)
+
                 make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 230PM']),
                          level='info')
                 dates = os.listdir(f'//fileserver01/limdata/data/individual staff folders/andrew li/csv_history')
