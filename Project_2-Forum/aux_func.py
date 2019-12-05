@@ -266,7 +266,7 @@ def download_current_universe_price():
     ret_matrix.dropna(inplace=True)
     ret_matrix.to_csv('csv_history/ret_matrix.csv')
 
-    csi300 = jq.get_price('000300.XSHG', start_date='2019-11-01', end_date='2019-12-02').close
+    csi300 = jq.get_price('000300.XSHG', start_date='2019-11-01', end_date='2019-12-03').close
     csi300 = (csi300.shift(-1) - csi300) / csi300
     csi300.to_csv('csv_history/csi300.csv')
 

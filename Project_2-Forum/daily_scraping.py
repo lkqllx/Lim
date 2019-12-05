@@ -1,3 +1,9 @@
+""""
+This program is by Andrew LI for retrieving the EastMoney forum information
+Multi-processes and multi-threads have been enabled but we may not be able
+to scrape the forum in full speed as they may block our IP address.
+"""
+
 import bs4
 import numpy as np
 import pandas as pd
@@ -21,18 +27,27 @@ cal = hong_kong.HongKong()
 from openpyxl.styles import colors
 from openpyxl.formatting.rule import DataBarRule
 
+
 logging.basicConfig(filename=f'logs/daily_routine_{dt.datetime.now().year}{dt.datetime.now().month}'
-                             f'{dt.datetime.now().day}_{dt.datetime.now().hour}.log',
-                    filemode='w', format='\n%(message)s', level=logging.ERROR)
-lock = threading.RLock()
-processer_lock = mp.Lock()
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-chrome_options.add_argument('--log-level=3')
-chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-chrome_options.add_argument('--no-proxy-server')
-chrome_options.add_argument("--proxy-server='direct://'")
-chrome_options.add_argument("--proxy-bypass-list=*")
+                             f'{dt.datetime.now().day}_{dt.datetime.now().hour}.log',filemode='w',
+                    format='\n%(message)s', level=logging.ERROR)
+
+
+def init_config():
+    global lock
+    lock = threading.RLock()
+    global processer_lock
+    processer_lock = mp.Lock()
+    global chrome_options
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument('--log-level=3')
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    chrome_options.add_argument('--no-proxy-server')
+    chrome_options.add_argument("--proxy-server='direct://'")
+    chrome_options.add_argument("--proxy-bypass-list=*")
+
+init_config()
 
 # def get_proxy():
 #     proxies = []
@@ -404,7 +419,7 @@ def run_update_historical_data(args):
                     filtered_df.set_index('Datetime', inplace=True)
                     filtered_df = filtered_df[(filtered_df.index > prev_df.index[0])]
                     filtered_df.loc[:, 'Sentiment']  = \
-                        filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP('1'+x).sentiments >= 0.5 else 'Negative')
+                        filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP(x+'1').sentiments >= 0.5 else 'Negative')
                     prev_df = pd.concat([filtered_df, prev_df], sort=True)
                     prev_df.to_csv(f'daily/{ticker}/{max_date}.csv', encoding='utf_8_sig')
 
@@ -415,7 +430,6 @@ def run_update_historical_data(args):
                         filtered_df.loc[:, 'Sentiment'] = \
                             filtered_df['Title'].apply(lambda x: 'Positive' if SnowNLP('1'+x).sentiments >= 0.5 else 'Negative')
                         filtered_df.to_csv(f'daily/{ticker}/{date}.csv', index=False, encoding='utf_8_sig')
-
                 return ticker, True, time_parsing, time_web
                 # else:
                 #     formated_df.set_index('Datetime', inplace=True)
@@ -512,6 +526,7 @@ def update(num_pages, num_cores=4, num_thread=5):
     count = 5
     while (not all_succesful) and count >= 0:
         time.sleep(60)
+        init_config()
         try:
             print('Failed Ticker', f'\n, '.join(not_succesful_list))
             (new_curr_list, time_web, time_parsing), time_used = run_by_historical_multiprocesses(not_succesful_list,
@@ -573,9 +588,9 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
             num_posts_neg_8 = lookback_8[lookback_8['Sentiment'] == 'Negative']['Sentiment'].count()
             num_posts_all_10 = lookback_10['Sentiment'].count()
 
-            info_list.append((ticker,
+            info_list.append((ticker + ' CH',
                               end.strftime('%Y-%m-%d'),
-                              end.strftime('%H-%M-%S'),
+                              end.strftime('%H:%M:%S'),
                               num_posts_all,
                               num_posts_pos,
                               num_posts_neg,
@@ -600,36 +615,36 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
     # save_tosql(current_table, _time, curr_date)
     current_table.to_csv(f'csv_history/table_{_time}_{curr_date}.csv', index=False)
 
-def save_tosql(current_table, which_table, curr_date):
-    from sqlalchemy import create_engine
-    import pymssql
-    server = 'LIMHKDWH01S'
-    user = 'andrew.li'
-    password = 'an@lim355'
-    DB = {'servername': server,
-          'database': 'FORUM_DB',
-          'driver': 'driver=SQL Server Native Client 11.0'}
-    engine = create_engine(
-        f'mssql+pyodbc://{user}:{password}@' + DB['servername'] + '/' + DB['database'] + "?" + DB['driver'])
-    df = current_table.copy(deep=True)
-    df['Ticker'] = df['Ticker'].astype('str')
-
-    try:
-        conn = pymssql.connect(server="LIMHKDWH01S", user=user, password=password)
-        prev_df =  pd.read_sql(f'select * from table_{which_table}', conn)
-        df = prev_df.append(df, ignore_index=True)
-        df.reset_index(drop=True, inplace=True)
-    except:
-        pass
-
-    """Here we cannot use the 'append' method to insert SQL since
-    there are some unexpected exceptions captured which will disorder the sequence
-    of the database. Thus we have to retrieve the data first and replace the previous one"""
-    df.to_sql(f'table_{which_table}', engine, if_exists='replace', index=False)
-    current_table.to_excel(f'//fileserver01/limdata/data/'
-                           f'individual staff folders/andrew li/csv_history/'
-                           f'table_{which_table}_{curr_date}.xlsx', index=False)
-
+# def save_tosql(current_table, which_table, curr_date):
+#     from sqlalchemy import create_engine
+#     import pymssql
+#     server = 'LIMHKDWH01S'
+#     user = 'andrew.li'
+#     password = 'an@lim355'
+#     DB = {'servername': server,
+#           'database': 'FORUM_DB',
+#           'driver': 'driver=SQL Server Native Client 11.0'}
+#     engine = create_engine(
+#         f'mssql+pyodbc://{user}:{password}@' + DB['servername'] + '/' + DB['database'] + "?" + DB['driver'])
+#     df = current_table.copy(deep=True)
+#     df['Ticker'] = df['Ticker'].astype('str')
+#
+#     try:
+#         conn = pymssql.connect(server="LIMHKDWH01S", user=user, password=password)
+#         prev_df =  pd.read_sql(f'select * from table_{which_table}', conn)
+#         df = prev_df.append(df, ignore_index=True)
+#         df.reset_index(drop=True, inplace=True)
+#     except:
+#         pass
+#
+#     """Here we cannot use the 'append' method to insert SQL since
+#     there are some unexpected exceptions captured which will disorder the sequence
+#     of the database. Thus we have to retrieve the data first and replace the previous one"""
+#     df.to_sql(f'table_{which_table}', engine, if_exists='replace', index=False)
+#     current_table.to_excel(f'//fileserver01/limdata/data/'
+#                            f'individual staff folders/andrew li/csv_history/'
+#                            f'table_{which_table}_{curr_date}.xlsx', index=False)
+#
 
 def make_log(msg, level):
     if level == 'info':
@@ -639,50 +654,69 @@ def make_log(msg, level):
 
 
 if __name__ == '__main__':
-    # while True:
-    #     try:
-    #         if time.localtime().tm_hour == 9 and (time.localtime().tm_min == 0):
-    #             curr = dt.datetime.now()
-    #             curr_str = curr.strftime('%Y-%m-%d')
-    #             make_log(msg='\n'.join(['-' * 50, ' ' * 20 + curr_str, '-' * 50]), level='info')
-    #             time.sleep(61)
-    #
-    #         if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
-    #             _doing = '1230PM'
-    #             today = dt.datetime.now()
-    #             today_str = today.strftime('%Y-%m-%d')
-    #             make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 1230PM']),
-    #                      level='info')
-    #             update(-1, num_cores=1, num_thread=1)
-    #             make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 1230PM']),
-    #                      level='info')
-    #             dates = os.listdir(f'csv_history')
-    #             dates = [dt.datetime.strptime(re.findall('table_1230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
-    #                      for date in dates if re.match('table_1230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
-    #             try:
-    #                 recorded_date = max(dates)
-    #                 date_range = pd.date_range(start=recorded_date, end=today, normalize=True)[1:]
-    #             except:
-    #                 date_range = [today]
-    #             for target_date in date_range:
-    #                 prev_date = target_date - dt.timedelta(10)
-    #                 target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 12, 30)
-    #                 target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
-    #
-    #                 curr_date = target_date.strftime('%Y-%m-%d')
-    #                 make_log(msg='\n'.join(['*' * 50, f'Creating summary table of {curr_date} - 1230PM']),
-    #                          level='info')
-    #                 create_current_summary_table(target_start_date, target_end_date, '1230PM')
-    #                 make_log('\n'.join([f'Successfully updated the database of {curr_date} - 1230PM', '*' * 50]),
-    #                          level='info')
-    #
-    #         elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
+    """
+    Main block to start the program
+    At 9:00 AM, the program will write the date into log.
+    
+    At 12:30 PM, the program will update the forum data into share drive
+    and create summary table 
+    
+    At 2:30 PM, the program will update the forum data second time and
+    create the summary table which will be saved into SQL database
+    """
+    while True:
+        try:
+            if time.localtime().tm_hour == 9 and (time.localtime().tm_min == 0):
+                """9 AM - Log the date"""
+                curr = dt.datetime.now()
+                curr_str = curr.strftime('%Y-%m-%d')
+                make_log(msg='\n'.join(['-' * 50, ' ' * 20 + curr_str, '-' * 50]), level='info')
+                time.sleep(61)
+
+            if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
+                """12:30 PM - Retrieve data from forum and create summary table"""
+                _doing = '1230PM'
+                today = dt.datetime.now()
+                today_str = today.strftime('%Y-%m-%d')
+                make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 1230PM']),
+                         level='info')
+
+                # Place to update the forum data
+                # Currently, the multi-processor part has been disabled
+                update(-1, num_cores=1, num_thread=1)
+
+                make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 1230PM']),
+                         level='info')
+                dates = os.listdir(f'csv_history')
+                dates = [dt.datetime.strptime(re.findall('table_1230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
+                         for date in dates if re.match('table_1230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
+                try:
+                    recorded_date = max(dates)
+                    date_range = pd.date_range(start=recorded_date, end=today, normalize=True)[1:]
+                except:
+                    date_range = [today]
+                for target_date in date_range:
+                    prev_date = target_date - dt.timedelta(10)
+                    target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 12, 30)
+                    target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
+
+                    curr_date = target_date.strftime('%Y-%m-%d')
+                    make_log(msg='\n'.join(['*' * 50, f'Creating summary table of {curr_date} - 1230PM']),
+                             level='info')
+                    create_current_summary_table(target_start_date, target_end_date, '1230PM')
+                    make_log('\n'.join([f'Successfully updated the database of {curr_date} - 1230PM', '*' * 50]),
+                             level='info')
+
+            elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
+                """2:30 PM - Retrieve data and create summary table"""
                 _doing = '230PM'
                 today = dt.datetime.now()
                 today_str = today.strftime('%Y-%m-%d')
                 make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 230PM']),
                          level='info')
-                # update(200, num_cores=2, num_thread=5)
+                # Place to update the forum data
+                # Currently, the multi-processor part has been disabled
+                update(-1, num_cores=1, num_thread=1)
                 make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 230PM']),
                          level='info')
                 dates = os.listdir(f'csv_history')
@@ -703,11 +737,11 @@ if __name__ == '__main__':
                     create_current_summary_table(target_start_date, target_end_date, '230PM')
                     make_log('\n'.join([f'Successfully updated the database of {curr_date} - 230PM', '*' * 50]),
                              level='info')
-        #     time.sleep(30)
-        #
-        # except Exception as e:
-        #     logging.exception('message')
-        #     make_log('\n'.join(['*' * 50, f'Unexpected error detected while doing {today_str} - {_doing}'.upper(),
-        #                         'Due to following error - ']), level='info')
-        #     make_log(e, level='info')
-        #     print(e)
+            time.sleep(30)
+
+        except Exception as e:
+            logging.exception('message')
+            make_log('\n'.join(['*' * 50, f'Unexpected error detected while doing {today_str} - {_doing}'.upper(),
+                                'Due to following error - ']), level='info')
+            make_log(e, level='info')
+            print(e)
