@@ -30,15 +30,22 @@ from openpyxl.formatting.rule import DataBarRule
 logging.basicConfig(filename=f'logs/daily_routine_{dt.datetime.now().year}{dt.datetime.now().month}'
                              f'{dt.datetime.now().day}_{dt.datetime.now().hour}.log',
                     filemode='w', format='\n%(message)s', level=logging.CRITICAL)
-lock = threading.RLock()
-processer_lock = mp.Lock()
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-chrome_options.add_argument('--log-level=3')
-chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-chrome_options.add_argument('--no-proxy-server')
-chrome_options.add_argument("--proxy-server='direct://'")
-chrome_options.add_argument("--proxy-bypass-list=*")
+
+def init_config():
+    global lock
+    lock = threading.RLock()
+    global processer_lock
+    processer_lock = mp.Lock()
+    global chrome_options
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument('--log-level=3')
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    chrome_options.add_argument('--no-proxy-server')
+    chrome_options.add_argument("--proxy-server='direct://'")
+    chrome_options.add_argument("--proxy-bypass-list=*")
+
+init_config()
 
 
 # def get_proxy():
@@ -525,7 +532,7 @@ def update(num_pages, num_cores=4, num_thread=5):
     count = 5
     while (not all_succesful) and count >= 0:
         time.sleep(60)
-
+        init_config()
         try:
             print('Failed Ticker', f'\n, '.join(not_succesful_list))
             (new_curr_list, time_web, time_parsing), time_used = run_by_historical_multiprocesses(not_succesful_list,
