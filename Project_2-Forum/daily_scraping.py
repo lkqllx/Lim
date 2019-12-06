@@ -377,7 +377,7 @@ class Stock:
 def run_update_historical_data(args):
     """
     Scrape the stock info given its ticker
-    :param ticker: the stock to be scraped
+    :param args: ticker, num_pages, num_thread
     :return: None
     """
     # print('-' * 20, f'Doing {ticker}', '-' * 20)
@@ -466,19 +466,19 @@ def run_by_historical_multiprocesses(csi300, num_pages, num_cores, num_thread):
     time_parsing = 0
     time_web = 0
     with Bar('Downloading', max=len(csi300)) as bar:
-        # with mp.Pool(num_cores) as pool:
-        #     for output in pool.imap_unordered(run_update_historical_data, zip(csi300, [num_pages] * len(csi300),
-        #                                                                       [num_thread] * len(csi300))):
-        #         bar.next()
-        #         time_parsing += output[2]
-        #         time_web += output[3]
-        #         results.append(output[:2])
-        for args in zip(csi300, [num_pages] * len(csi300),[num_thread] * len(csi300)):
-            output = run_update_historical_data(args)
-            bar.next()
-            time_parsing += output[2]
-            time_web += output[3]
-            results.append(output[:2])
+        with mp.Pool(num_cores) as pool:
+            for output in pool.imap_unordered(run_update_historical_data, zip(csi300, [num_pages] * len(csi300),
+                                                                              [num_thread] * len(csi300))):
+                bar.next()
+                time_parsing += output[2]
+                time_web += output[3]
+                results.append(output[:2])
+        # for args in zip(csi300, [num_pages] * len(csi300),[num_thread] * len(csi300)):
+        #     output = run_update_historical_data(args)
+        #     bar.next()
+        #     time_parsing += output[2]
+        #     time_web += output[3]
+        #     results.append(output[:2])
     return results, time_web, time_parsing
 
 
@@ -574,7 +574,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
                         curr_ticker = pd.read_csv(f'//fileserver01/limdata/data/individual staff folders/'
                                                    f'andrew li/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
                 except:
-                    # logging.exception(f'Out-of-Range {date}-{ticker}')
+                    logging.exception(f'Out-of-Range {date}-{ticker}')
                     continue
             """Compute the most recent available date and cumulate the posts 
             Monday's 2:30PM posts = previous Friday 3PM - Monday 2:30PM"""
@@ -618,7 +618,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
     current_table['Rank_pos'] = np.ceil(current_table['Num_pos_1'].rank(axis=0, pct=True).mul(10)).astype(int)
     current_table['Rank_neg'] = np.ceil(current_table['Num_neg_1'].rank(axis=0, pct=True).mul(10)).astype(int)
     current_table['Rank_neg_8'] = np.ceil(current_table['Num_neg_8'].rank(axis=0, pct=True).mul(10)).astype(int)
-    current_table['Rank_all_10'] = np.ceil(current_table['Num_all_10'].rank(axis=0, pct=True).mul(10)).astype(int)
+    current_table['Rank_all_10'] = np.ceil(current_table['Num_all_10'].rank(axis=0,pct=True).mul(10)).astype(int)
 
     save_tosql(current_table, _time, curr_date)
 
