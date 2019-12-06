@@ -296,8 +296,28 @@ def quick_backtest():
     print(cum_ret)
 
 
+def count_mkt_cap_decile():
+    mkt_caps = pd.read_csv('data/fundamental/market_caps.csv',
+                           index_col=0, parse_dates=True)
+    for date in mkt_caps.index:
+        mkt_caps.loc[date, :] = np.ceil(mkt_caps.loc[date, :].rank(axis=0, pct=True).mul(10)).astype('Int64')
+
+    inventory = pd.read_csv('~/Desktop/individual_pnl_cmc1_ret_0.csv',
+                            index_col=0, parse_dates=True)
+    inventory.columns = [col.zfill(6) for col in inventory.columns]
+    count_dict = {idx:0 for idx in range(1, 11)}
+    with Bar('Counting', max=inventory.shape[0]) as bar:
+        for date in inventory.index[1:]:
+            # tickers = inventory.columns[inventory[date, :] == 10]
+            tickers = inventory.columns[inventory.loc[date, :] != 0]
+            caps_group = mkt_caps.loc[date, tickers].astype(int, errors='ignore')
+            for decile in range(1, 11):
+                count_dict[decile] += caps_group[caps_group == decile].count()
+            bar.next()
+    print(count_dict)
+
 if __name__ == '__main__':
-    jq.auth('18810906018', '906018')
+    # jq.auth('18810906018', '906018')
     # extract_excess_returns_to_r()
     # download_members()
 
@@ -310,5 +330,6 @@ if __name__ == '__main__':
     # add_sentiment_label()
     # (_, time_used) = run_by_mp('000002.csv')
     # print(time_used)
-    download_current_universe_price()
-    quick_backtest()
+    # download_current_universe_price()
+    # quick_backtest()
+    count_mkt_cap_decile()

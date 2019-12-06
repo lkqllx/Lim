@@ -574,7 +574,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
                         curr_ticker = pd.read_csv(f'//fileserver01/limdata/data/individual staff folders/'
                                                    f'andrew li/daily/{ticker}/{date}.csv', index_col=0, parse_dates=True)
                 except:
-                    logging.exception(f'Out-of-Range {date}-{ticker}')
+                    # logging.exception(f'Out-of-Range {date}-{ticker}')
                     continue
             """Compute the most recent available date and cumulate the posts 
             Monday's 2:30PM posts = previous Friday 3PM - Monday 2:30PM"""
@@ -618,7 +618,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
     current_table['Rank_pos'] = np.ceil(current_table['Num_pos_1'].rank(axis=0, pct=True).mul(10)).astype(int)
     current_table['Rank_neg'] = np.ceil(current_table['Num_neg_1'].rank(axis=0, pct=True).mul(10)).astype(int)
     current_table['Rank_neg_8'] = np.ceil(current_table['Num_neg_8'].rank(axis=0, pct=True).mul(10)).astype(int)
-    current_table['Rank_all_10'] = np.ceil(current_table['Num_all_10'].rank(axis=0,pct=True).mul(10)).astype(int)
+    current_table['Rank_all_10'] = np.ceil(current_table['Num_all_10'].rank(axis=0, pct=True).mul(10)).astype(int)
 
     save_tosql(current_table, _time, curr_date)
 
