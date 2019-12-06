@@ -134,5 +134,21 @@ class Stock:
     pass
 ```
 
+The overall flow is like below:
+
+```{r, echo = FALSE}
+DiagrammeR::grViz(
+  "
+  digraph nicegraph{
+    {main} -> update
+    update -> run_by_historical_multiprocesses
+    run_by_historical_multiprocesses -> run_update_historical_data
+    run_update_historical_data -> Stock_run
+    Stock_run -> create_current_summary_table
+    create_current_summary_table -> main
+  }
+  ", height = 600
+)
+```
 
 
