@@ -553,6 +553,7 @@ def create_current_summary_table(start: dt.datetime, end: dt.datetime, _time: st
 
     files = os.listdir('daily')
     tickers = [file for file in files if re.match('[\d]+', file)]
+    tickers = sorted(tickers, key=lambda x:int(x))
     info_list = []
     date_range = pd.date_range(start=start, end=end, normalize=True)
     date_range_str = [date.strftime('%Y-%m-%d') for date in date_range]
@@ -654,60 +655,60 @@ def make_log(msg, level):
 
 
 if __name__ == '__main__':
-    """
-    Main block to start the program
-    At 9:00 AM, the program will write the date into log.
-    
-    At 12:30 PM, the program will update the forum data into share drive
-    and create summary table 
-    
-    At 2:30 PM, the program will update the forum data second time and
-    create the summary table which will be saved into SQL database
-    """
-    while True:
-        try:
-            if time.localtime().tm_hour == 9 and (time.localtime().tm_min == 0):
-                """9 AM - Log the date"""
-                curr = dt.datetime.now()
-                curr_str = curr.strftime('%Y-%m-%d')
-                make_log(msg='\n'.join(['-' * 50, ' ' * 20 + curr_str, '-' * 50]), level='info')
-                time.sleep(61)
-
-            if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
-                """12:30 PM - Retrieve data from forum and create summary table"""
-                _doing = '1230PM'
-                today = dt.datetime.now()
-                today_str = today.strftime('%Y-%m-%d')
-                make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 1230PM']),
-                         level='info')
-
-                # Place to update the forum data
-                # Currently, the multi-processor part has been disabled
-                update(-1, num_cores=1, num_thread=1)
-
-                make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 1230PM']),
-                         level='info')
-                dates = os.listdir(f'csv_history')
-                dates = [dt.datetime.strptime(re.findall('table_1230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
-                         for date in dates if re.match('table_1230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
-                try:
-                    recorded_date = max(dates)
-                    date_range = pd.date_range(start=recorded_date, end=today, normalize=True)[1:]
-                except:
-                    date_range = [today]
-                for target_date in date_range:
-                    prev_date = target_date - dt.timedelta(10)
-                    target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 12, 30)
-                    target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
-
-                    curr_date = target_date.strftime('%Y-%m-%d')
-                    make_log(msg='\n'.join(['*' * 50, f'Creating summary table of {curr_date} - 1230PM']),
-                             level='info')
-                    create_current_summary_table(target_start_date, target_end_date, '1230PM')
-                    make_log('\n'.join([f'Successfully updated the database of {curr_date} - 1230PM', '*' * 50]),
-                             level='info')
-
-            elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
+    # """
+    # Main block to start the program
+    # At 9:00 AM, the program will write the date into log.
+    #
+    # At 12:30 PM, the program will update the forum data into share drive
+    # and create summary table
+    #
+    # At 2:30 PM, the program will update the forum data second time and
+    # create the summary table which will be saved into SQL database
+    # """
+    # while True:
+    #     try:
+    #         if time.localtime().tm_hour == 9 and (time.localtime().tm_min == 0):
+    #             """9 AM - Log the date"""
+    #             curr = dt.datetime.now()
+    #             curr_str = curr.strftime('%Y-%m-%d')
+    #             make_log(msg='\n'.join(['-' * 50, ' ' * 20 + curr_str, '-' * 50]), level='info')
+    #             time.sleep(61)
+    #
+    #         if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
+    #             """12:30 PM - Retrieve data from forum and create summary table"""
+    #             _doing = '1230PM'
+    #             today = dt.datetime.now()
+    #             today_str = today.strftime('%Y-%m-%d')
+    #             make_log(msg='\n'.join([f'1. Retrieving posts from forum of {today_str} - 1230PM']),
+    #                      level='info')
+    #
+    #             # Place to update the forum data
+    #             # Currently, the multi-processor part has been disabled
+    #             update(-1, num_cores=1, num_thread=1)
+    #
+    #             make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 1230PM']),
+    #                      level='info')
+    #             dates = os.listdir(f'csv_history')
+    #             dates = [dt.datetime.strptime(re.findall('table_1230PM_([\d]+-[\d]+-[\d]+).xlsx', date)[0], '%Y-%m-%d')
+    #                      for date in dates if re.match('table_1230PM_[\d]+-[\d]+-[\d]+.xlsx', date)]
+    #             try:
+    #                 recorded_date = max(dates)
+    #                 date_range = pd.date_range(start=recorded_date, end=today, normalize=True)[1:]
+    #             except:
+    #                 date_range = [today]
+    #             for target_date in date_range:
+    #                 prev_date = target_date - dt.timedelta(10)
+    #                 target_end_date = dt.datetime(target_date.year, target_date.month, target_date.day, 12, 30)
+    #                 target_start_date = dt.datetime(prev_date.year, prev_date.month, prev_date.day, 15)
+    #
+    #                 curr_date = target_date.strftime('%Y-%m-%d')
+    #                 make_log(msg='\n'.join(['*' * 50, f'Creating summary table of {curr_date} - 1230PM']),
+    #                          level='info')
+    #                 create_current_summary_table(target_start_date, target_end_date, '1230PM')
+    #                 make_log('\n'.join([f'Successfully updated the database of {curr_date} - 1230PM', '*' * 50]),
+    #                          level='info')
+    #
+    #         elif (time.localtime().tm_hour == 14) and (time.localtime().tm_min == 30):
                 """2:30 PM - Retrieve data and create summary table"""
                 _doing = '230PM'
                 today = dt.datetime.now()
@@ -716,7 +717,7 @@ if __name__ == '__main__':
                          level='info')
                 # Place to update the forum data
                 # Currently, the multi-processor part has been disabled
-                update(-1, num_cores=1, num_thread=1)
+                # update(-1, num_cores=1, num_thread=1)
                 make_log(msg='\n'.join([f'2. Successfully retrieved posts from forum of {today_str} - 230PM']),
                          level='info')
                 dates = os.listdir(f'csv_history')
@@ -737,11 +738,11 @@ if __name__ == '__main__':
                     create_current_summary_table(target_start_date, target_end_date, '230PM')
                     make_log('\n'.join([f'Successfully updated the database of {curr_date} - 230PM', '*' * 50]),
                              level='info')
-            time.sleep(30)
-
-        except Exception as e:
-            logging.exception('message')
-            make_log('\n'.join(['*' * 50, f'Unexpected error detected while doing {today_str} - {_doing}'.upper(),
-                                'Due to following error - ']), level='info')
-            make_log(e, level='info')
-            print(e)
+        #     time.sleep(30)
+        #
+        # except Exception as e:
+        #     logging.exception('message')
+        #     make_log('\n'.join(['*' * 50, f'Unexpected error detected while doing {today_str} - {_doing}'.upper(),
+        #                         'Due to following error - ']), level='info')
+        #     make_log(e, level='info')
+        #     print(e)
