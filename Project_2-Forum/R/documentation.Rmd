@@ -2,7 +2,10 @@
 title: "Codes Documentation"
 author: "ANDREW LI"
 date: "11/26/2019"
-output: pdf_document
+output: 
+  html_document:
+    theme: sandstone
+    highlight: tango
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 > The program will scrape the 300 tickers from CSI300. For each ticker, only one page will be requested at a time. The program will update the historical data in the database by using latest information.
 
-> **Time complexity**: more than 15 minutes (depending on the number of total post of that day)
+> **Time complexity**: more than 25 minutes (depending on the number of total post of that day)
 
 > **Concurrency**: 1 Processes and 1 Threads are used, which means that each process is able to send 1 requests to the remote sever at a single time point. After acquiring 1 pages information, the program will take 2 - 3 seconds to parse and reformat the information followed by downloading the rest of tickers.
 
@@ -30,24 +33,133 @@ knitr::opts_chunk$set(echo = TRUE)
 
 > The program will scrape the 300 tickers page by page during this period. We will compare the timestamp of scraped page with our historical data to decide whether more pages are needed to be scraped or not.
 
-> **Time complexity**: 10 - 15 minutes (depending on the number of post of that day)
+> **Time complexity**: 15 - 20 minutes (depending on the number of post of that day)
 
 > **Concurrency**: 1 Processes and 1 Thread are used, which means that each process can only send 1 request to the remote sever at a single time point.
 
-\newpage
+<!-- \newpage -->
 
-## Work Flow
-As shown below, the main process will distribute the tickers to sub-processes and each sub-process will create threads to request web page and wait for response independently. After having the complete information, the data will be formatted by each sub-process.
+<!-- ## Work Flow -->
+<!-- As shown below, the main process will distribute the tickers to sub-processes and each sub-process will create threads to request web page and wait for response independently. After having the complete information, the data will be formatted by each sub-process. -->
 
-```{r fig.width=8, fig.height=5,echo=FALSE}
-library(png)
-library(grid)
-img <- readPNG("flow.png")
- grid.raster(img)
-```
+<!-- ```{r fig.width=8, fig.height=5,echo=FALSE} -->
+<!-- library(png) -->
+<!-- library(grid) -->
+<!-- img <- readPNG("flow.png") -->
+<!--  grid.raster(img) -->
+<!-- ``` -->
 
 ## Execution
 1. install python3.6 through [here](https://www.python.org/downloads/release/python-368/)
 2. run ```pip install -r requirements.txt``` to install required dependencies
 3. run ```python -W ignore daily_scraping.py```
+
+## Program Explaination
+There are 6 main code blocks in `daily_scrapying.py` except for several auxiliary functions.
+
+1. The first block is the `if __name__ = '__main__'`in which we will make sure the program keeps running and check the current time 
+to execute corresponding function.
+
+```{python}
+"""
+if __name__ = '__main__':
+   while True:
+     if time.localtime().tm_hour == 9 and (time.localtime().tm_min == 0):
+     # At 9 o'clock, we add a date header to log
+    
+     if time.localtime().tm_hour == 12 and (time.localtime().tm_min == 30):
+     # At 12:30 PM, we retrieve forum data from forum and then create summary table - 1230PM
+        update()
+        create_current_summary_table()
+    
+     if time.localtime().tm_hour == 14 and (time.localtime().tm_min == 30):
+     # At 14:30 PM, we retrieve forum data from forum and then create summary table - 230PM
+        update()
+        create_current_summary_table()
+    
+     time.sleep(30)
+     #  rest the program for 30 seconds to avoiding meaningless running"""
+```
+
+2. Second block is the `update function` which will retrieve csi300 tickers and foward tickers to 
+`run_by_historical_multiprocesses function` and finally check the integrity of the data
+```{python}
+def update(num_pages, num_cores=1, num_thread=1):
+  """
+    csi300 = read from file or download from outside database
+    all_successful, failed_tickers = run_by_historical_multiprocesses(csi300)
+    max_retries = 5
+    while not all_successful and max_retries >= 0:
+         all_successful, failed_tickers = run_by_historical_multiprocesses(failed_tickers)
+  """
+  pass
+```
+
+3. Third block is the `run_by_historical_multiprocesses function` which is the interim function to
+create a processes pool for multi-processing (deactivated  now for single process)
+```{python}
+def run_by_historical_multiprocesses(csi300, num_pages, num_cores, num_thread):
+  """
+    pool = create_process_pool()
+    with pool:
+      run_update_historical_data()
+  """
+  pass
+```
+
+4. Fourth block is the place to create an Stock object for each ticker and format the retrieved data.
+```{python}
+def run_update_historical_data(args):
+  """  
+   stock = Stock(ticker, num_pages, num_thread)
+   retrieved_data = stock.run()
+   formatted_data = stock.reformat_date(retrieved_data)
+   final_output = nlp(formatted_data)
+  """
+  pass
+```
+
+5. The fifth block is the **`class stock`** which will be used to create an object for each ticker
+
+```{python}
+class Stock:
+    """
+    1. Fetch data from http://www.eastmoney.com of specified ticker
+       a. Create a selenium.webdriver object to acquire the verification of website
+       b. Request html one by one afterwards.
+       c. Parse the retrieved data
+    2. Check the integrity of data
+    3. Fill the missing Year information of scraped data
+    """
+    pass
+```
+
+6. The last block is the `create_current_summary_table function` which is used to build up the table on the basis of scrapped info.
+```{python}
+def create_current_summary_table():
+   """
+   data = read_scraped_data
+   ranked_Data = aggregate_info(data)
+   to_sql(data)
+   """
+   pass
+```
+
+The overall flow is like below:
+
+```{r, echo = FALSE}
+DiagrammeR::grViz(
+  "
+  digraph nicegraph{
+    {main} -> update
+    update -> run_by_historical_multiprocesses
+    run_by_historical_multiprocesses -> run_update_historical_data
+    run_update_historical_data -> Stock_run
+    Stock_run -> create_current_summary_table
+    create_current_summary_table -> main
+  }
+  ", height = 600
+)
+```
+
 
